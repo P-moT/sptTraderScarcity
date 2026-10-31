@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>TraderScarcity</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputType>Library</OutputType>
+    <Version>0.1.0</Version>
+    <!-- The two lines below will set the output path for the binaries -->
+    <OutputPath>bin\$(Configuration)\$(ProjectName)\$(AssemblyName)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SPTarkov.Common" Version="4.1.2" />
+    <PackageReference Include="SPTarkov.DI" Version="4.1.2" />
+    <PackageReference Include="SPTarkov.Server.Core" Version="4.1.2" />
+    <PackageReference Include="SPTarkov.Reflection" Version="4.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="config.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Release builds also produce dist\TraderScarcity-<Version>.zip, laid out to be extracted straight into the game folder (SPT_Runtime\user\mods\...) -->
+  <Target Name="PackageRelease" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <PropertyGroup>
+      <PackageStaging>$(BaseIntermediateOutputPath)package\</PackageStaging>
+      <PackageModFolder>$(PackageStaging)SPT_Runtime\user\mods\$(AssemblyName)\</PackageModFolder>
+    </PropertyGroup>
+    <RemoveDir Directories="$(PackageStaging)" />
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll;$(OutputPath)config.json;$(MSBuildProjectDirectory)\LICENSE" DestinationFolder="$(PackageModFolder)" />
+    <MakeDir Directories="$(MSBuildProjectDirectory)\dist" />
+    <ZipDirectory SourceDirectory="$(PackageStaging)" DestinationFile="$(MSBuildProjectDirectory)\dist\$(AssemblyName)-$(Version).zip" Overwrite="true" />
+  </Target>
+
+</Project>
