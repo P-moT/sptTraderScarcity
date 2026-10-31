@@ -1,27 +1,10 @@
 {
-    // Print a summary of every stock roll to the server console (at startup and on each trader restock).
     "LogRolls": false,
-
-    // Also apply scarcity to traders added by other mods. Set to false to only affect base game traders.
     "IncludeModdedTraders": true,
-
-    // Also apply scarcity to Fence. His stock already rotates at random, so he is left fully stocked by default.
-    // When on, each Fence offer is rolled once when it appears in his stock (no loyalty boon for Fence).
     "IncludeFence": false,
-
-    // Chance (0 to 1) that an in-stock offer normally locked behind loyalty level 2+ is sold one level lower until the next restock.
     "LoyaltyBumpChance": 0.1,
-
-    // Each restock, every offer rolls InStockChance (0 to 1) to be in stock at all.
-    // If it is, the trader has between Min and Max of it (inclusive). Out of stock offers stay visible but can't be bought.
-    // Currency exchange offers, Lightkeeper and Ref are never touched.
-
-    // Loose rounds
     "Ammo":    { "InStockChance": 0.30, "Min": 10, "Max": 90 },
-    // Ammo boxes
     "AmmoBox": { "InStockChance": 0.30, "Min": 1, "Max": 1 },
-    // Weapons, armor, plates, helmets, rigs, backpacks, weapon mods
     "Gear":    { "InStockChance": 0.25, "Min": 1, "Max": 1 },
-    // Everything else: meds, provisions, barter items, keys, containers, etc.
     "Other":   { "InStockChance": 0.35, "Min": 1, "Max": 1 }
 }

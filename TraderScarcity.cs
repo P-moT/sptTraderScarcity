@@ -19,7 +19,7 @@ namespace TraderScarcity;
 
 public record ModMetadata : IModMetadata
 {
-    public string ModGuid { get; init; } = "com.takenmake.traderscarcity";
+    public string ModGuid { get; init; } = "com.pmot.traderscarcity";
     public string Name { get; init; } = "TraderScarcity";
     public string Author { get; init; } = "P_moT";
     public List<string>? Contributors { get; init; }
