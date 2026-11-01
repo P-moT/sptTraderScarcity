@@ -6,6 +6,12 @@
 ### - Due to Traders not having as many items, they may be more willing to sell exclusive stock.
 ---
 Directly inspired by the trader behavior of the original [Realism Mod](https://sp-mod.com/mod/416/spt-realism-mod) for 3.11 by [Fontaine](https://sp-mod.com/user/6053/fontaine)
+---
+## Recommendations
+- This mod hamstrings the traders, but doesn't touch the flea.
+- I would highly recommend a mod that restricts the flea market to round out the experience.
+- [Hardcore Rules](https://sp-mod.com/mod/784/hardcore-rules) has a customisable config that pairs well (this is what I use)
+- [ServerValueModifier](https://sp-mod.com/mod/236/server-value-modifier-svm) could be tweaked to a good result (most everyone has this already, so could be an alternative if you don't want some of the behavior of HardcoreRules)
 
 ## Config
 
