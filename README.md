@@ -1,10 +1,10 @@
 # Trader Scarcity
 ## After the fall of Tushonka, things are much harder to obtain.
-### - This mod will severely limit the items that the Traders have in stock.
-### - Default values are how I prefer them, but they can be changed to your liking.
-### - Modded traders can be excluded.
-### - Due to Traders not having as many items, they may be more willing to sell exclusive stock.
-### - New multi-option crafting helps make up the difference: one recipe, many ways in, many ways out.
+ - This mod will severely limit the items that the Traders have in stock.
+ - Default values are how I prefer them, but they can be changed to your liking.
+ - Modded traders can be excluded.
+ - Due to Traders not having as many items, they may be more willing to sell exclusive stock.
+ - New multi-option crafting helps make up the difference: one recipe, many ways in, many ways out.
 ---
 Directly inspired by the trader behavior of the original [Realism Mod](https://sp-mod.com/mod/416/spt-realism-mod) for 3.11 by [Fontaine](https://sp-mod.com/user/6053/fontaine)
 
@@ -34,23 +34,26 @@ Each item category has three values: `InStockChance` is the chance (0 to 1) that
 
 ## Multi-option crafting
 
-Instead of dozens of near-identical recipes, each new recipe takes **any one of several inputs** and makes **any one of several outputs**. For example, the rifle ammo press takes 1x Hawk *or* 1x Eagle *or* 2x Kite + matches, and makes 240x 5.56 M855 *or* 100x 7.62x51 M80 *or* 90x 7.62x54R LPS, and so on.
+Instead of dozens of near-identical recipes, each new recipe takes **any one of several inputs** and makes **any one of several outputs**. For example, the intermediate ammo press takes 1x Hawk *or* 1x Eagle *or* 3x Kite, and makes 150x 5.56 M855 *or* 70x 7.62x51 M80 *or* 60x 7.62x54R LPS, and so on.
 
-| Recipe | Station | Turns | Into |
-| --- | --- | --- | --- |
-| Gunpowder salvage | Workbench 1 | grenades or piles of junk rounds | Gunpowder "Kite" |
-| Ammo press (basic) | Workbench 1 | Kite | 9x19, 9x18, 5.45, 7.62x39, 12ga, 4.6 |
-| Ammo press (rifle) | Workbench 2 | Hawk, Eagle, or 2x Kite | 5.56, 7.62x51, 7.62x54R, .300 BLK, 9x39 |
-| Ammo press (AP) | Workbench 3 | two gunpowders | M855A1, M80A1, PS, .300 AP, BP, PBP, 4.6 AP, AP-20 |
-| Field dressing | Medstation 1 | meds, painkillers, bandages | bandages, tourniquets, splints |
-| Trauma kit | Medstation 2 | med tools, first aid kits | IFAK, CALOK-B, CMS, Grizzly |
-| Stim lab | Medstation 3 | Propital, SJ1, Morphine | Meldonin, AHF1-M, Zagustin, Perfotoran |
-| Ration kitchen | Nutrition Unit 1 | cheap canned food | water, stew, snacks |
-| Field rations | Nutrition Unit 2 | stew, condensed milk, sugar | Iskra, MRE, water rations, sausage |
-| Electronics salvage | Workbench 1 | broken phones, LCDs, drives | wires, capacitors, PCBs, cords, magnets |
-| Hardware salvage | Workbench 2 | nails, screws, hand tools, hoses | bolts, metal parts, KEKTAPE, tape, Poxeram |
+| Recipe | Station | Time | Takes any one of | Makes any one of |
+| --- | --- | --- | --- | --- |
+| Gunpowder salvage | Workbench 1 | 45m | F-1 · RGD-5 + VOG-25 · M67 · 5.45 HP · 5.56 HP · 7.62x39 HP | Gunpowder "Kite" |
+| Ammo press (basic) | Workbench 1 | 30m | Kite | 5.56 FMJ · 7.62x51 TCW SP · 9x19 Pst · 9x18 PSV · 5.45 PS · 7.62x39 FMJ · 12ga 8.5mm Magnum |
+| Ammo press (intermediate) | Workbench 2 | 45m | Hawk · Eagle · 3x Kite | 5.56 M855 · 7.62x51 M80 · 7.62x54R LPS · .300 BLK M62 · 9x39 SPP · 4.6 FMJ SX |
+| Ammo press (advanced) | Workbench 3 | 60m | 2x Hawk and Eagle, in any pairing | 5.56 M855A1 · 5.56 M995 · 7.62x39 BP · 7.62x51 M80A1 · 7.62x54R PS · 7.62x54R SNB · .300 BLK AP · 9x39 BP · 4.6 AP SX |
+| Field dressing | Medstation 1 | 30m | Pile of meds · Analgin · AI-2 · Aseptic bandages | Army bandages · Esmarch tourniquets · Aluminum splint |
+| Trauma kit | Medstation 2 | 90m | Medical tools + Pile of meds · Car first aid kits · Salewa + Army bandages | IFAK · CALOK-B · CMS (180m) · Grizzly (180m) |
+| Stim lab | Medstation 3 | 180m | Propital · SJ1 + syringe · Morphine + saline + syringe | Meldonin · AHF1-M (120m) · Zagustin (300m) · Perfotoran (300m) |
+| Ration kitchen | Nutrition Unit 1 | 60m | Green peas + rye croutons · pacific saury · sprats · humpback salmon · Emelya croutons | Water · small beef stew · Slickers · instant noodles · Army crackers |
+| Field rations | Nutrition Unit 2 | 120m | Small beef stew · condensed milk + Army crackers · sugar + oat flakes | Iskra · MRE · Emergency Water Ration · Salty Dog sausage |
+| Electronics salvage | Workbench 1 | 60m | Broken GPhone · Broken LCD · DVD drive + PSU · Gas analyzer · Damaged hard drives | Wires · capacitors · PCBs · magnets |
+| Hardware salvage | Workbench 2 | 90m | Radiator helix + corrugated hose · spark plugs · military corrugated tube | Bolts · screw nuts · metal spare parts · insulating tape · packs of nails |
+| Heavy salvage | Workbench 3 | 180m | Car battery · electric motor + spark plugs · electric drills · metal fuel tank + corrugated hose | Bolts · screw nuts · metal spare parts · wires |
 
-Outputs are worth roughly 1.2–1.6x their inputs at handbook prices.
+Times in brackets are per-output overrides. Some recipes also need a tool, which is kept: Pliers (gunpowder and hardware salvage), Leatherman (intermediate press), Set of files "Master" (advanced press), Screwdriver (electronics salvage) and Toolset (heavy salvage).
+
+The ammo presses return at most 1.0x their input at handbook prices, so you spend gunpowder to choose your ammo, not to make a profit. Meds, food and salvage are more generous at roughly 1.0–1.6x, with the most valuable outputs taking longer to craft.
 
 ### Two parts
 - **Server** (`SPT_Runtime\user\mods\TraderScarcity`) - adds the recipes. Each option combination becomes a normal hideout recipe, so everything works without the client part, just as separate cards.
@@ -58,9 +61,9 @@ Outputs are worth roughly 1.2–1.6x their inputs at handbook prices.
 
 ### Writing your own
 Recipes live in `recipes.jsonc`. Items are 24 character ids - the file explains every field. Mistakes are skipped with a warning in the server console rather than stopping the mod.
-- Keep a recipe's `Id` and the order of its options stable - they decide the in-game recipe ids, and crafts in progress for a changed recipe are lost. Add new options at the end.
+- Keep a recipe's `Id` and the order of its options stable - they decide the in-game recipe ids. Renaming an `Id` loses crafts in progress for that recipe; reordering or removing options changes which output an in-progress craft gives, or loses it if its slot no longer exists. Add new options at the end.
 - `Extras` are used up whichever input is picked, `Tools` are needed but kept, and an output can set its own `Minutes`.
-- `Color` (e.g. `"#2f6fd6"`) gives a recipe its own tile tint in Usable Crafting. The ammo presses use it for tiers: basic blue, rifle green, AP red.
+- `Color` (e.g. `"#2f6fd6"`) gives a recipe its own tile tint in Usable Crafting. The ammo presses and the salvage recipes use it for tiers: Workbench 1 blue, Workbench 2 green, Workbench 3 red.
 
 ### Crafting Notes
 - This feature was developed with [UsableCrafting](https://sp-mod.com/mod/3149/usable-crafting) in mind.
