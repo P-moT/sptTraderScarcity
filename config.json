@@ -2,6 +2,7 @@
     "LogRolls": false,
     "IncludeModdedTraders": true,
     "IncludeFence": false,
+    "EnableRecipes": true,
     "LoyaltyBumpChance": 0.1,
     "Ammo":    { "InStockChance": 0.30, "Min": 10, "Max": 90 },
     "AmmoBox": { "InStockChance": 0.30, "Min": 1, "Max": 1 },

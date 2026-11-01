@@ -23,7 +23,7 @@ public record ModMetadata : IModMetadata
     public string Name { get; init; } = "TraderScarcity";
     public string Author { get; init; } = "P_moT";
     public List<string>? Contributors { get; init; }
-    public SemanticVersioning.Version Version { get; init; } = new("0.1.0");
+    public SemanticVersioning.Version Version { get; init; } = new("0.2.0");
     public SemanticVersioning.Range SptVersion { get; init; } = new("4.1.6");
 
 
@@ -75,6 +75,36 @@ public class TraderScarcityLoader(
 
         logger.Success("[TraderScarcity] Loaded");
 
+        return Task.CompletedTask;
+    }
+}
+
+// Runs last, so recipe lists replaced by other mods (e.g. hideout overhauls) don't wipe ours
+[Injectable(TypePriority = OnLoadOrder.PostLoad + 1)]
+public class ScarcityCraftingLoader(
+    ISptLogger<ScarcityCraftingLoader> logger,
+    HideoutTable hideoutTable,
+    TemplateTable templateTable,
+    ItemHelper itemHelper,
+    ModHelper modHelper) : IOnLoad
+{
+    public Task OnLoadAsync(CancellationToken cancellationToken)
+    {
+        // TraderScarcityLoader runs earlier and has already loaded config.json
+        if (!AssortScarcity.Config.EnableRecipes)
+        {
+            return Task.CompletedTask;
+        }
+        try
+        {
+            var crafting = CraftingConfig.Load(modHelper.GetAbsolutePathToModFolder(Assembly.GetExecutingAssembly()), logger);
+            hideoutTable.Production.Recipes ??= [];
+            MultiRecipes.Apply(crafting, hideoutTable.Production.Recipes, templateTable.Items, logger, itemHelper, AssortScarcity.Config.LogRolls);
+        }
+        catch (Exception ex)
+        {
+            logger.Error($"[TraderScarcity] Failed to add recipes: {ex.Message}");
+        }
         return Task.CompletedTask;
     }
 }
