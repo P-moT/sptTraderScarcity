@@ -44,7 +44,15 @@ public class ScarcityConfig
         AllowTrailingCommas = true,
     };
 
-    public static ScarcityConfig Load(string modFolder, ISptLogger<TraderScarcityLoader> logger)
+    private static ScarcityConfig? _loaded;
+
+    // Read once and shared - the crafting loader needs it before the trader loader runs, and each warning should print once.
+    public static ScarcityConfig Load<T>(string modFolder, ISptLogger<T> logger)
+    {
+        return _loaded ??= Read(modFolder, logger);
+    }
+
+    private static ScarcityConfig Read<T>(string modFolder, ISptLogger<T> logger)
     {
         string path = Path.Combine(modFolder, "config.json");
         ScarcityConfig config;
@@ -62,7 +70,7 @@ public class ScarcityConfig
     }
 
     // Out of range values are clamped rather than rejected, so one typo doesn't turn the whole mod off.
-    private void Validate(ISptLogger<TraderScarcityLoader> logger)
+    private void Validate<T>(ISptLogger<T> logger)
     {
         LoyaltyBumpChance = ClampChance(LoyaltyBumpChance, nameof(LoyaltyBumpChance), logger);
         Ammo = ValidateRule(Ammo, nameof(Ammo), new ScarcityConfig().Ammo, logger);
@@ -71,7 +79,7 @@ public class ScarcityConfig
         Other = ValidateRule(Other, nameof(Other), new ScarcityConfig().Other, logger);
     }
 
-    private static StockRule ValidateRule(StockRule? rule, string name, StockRule fallback, ISptLogger<TraderScarcityLoader> logger)
+    private static StockRule ValidateRule<T>(StockRule? rule, string name, StockRule fallback, ISptLogger<T> logger)
     {
         if (rule is null)//"Gear": null in the file
         {
@@ -92,7 +100,7 @@ public class ScarcityConfig
         return rule;
     }
 
-    private static double ClampChance(double value, string name, ISptLogger<TraderScarcityLoader> logger)
+    private static double ClampChance<T>(double value, string name, ISptLogger<T> logger)
     {
         if (value is >= 0 and <= 1)
         {

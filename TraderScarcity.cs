@@ -79,8 +79,9 @@ public class TraderScarcityLoader(
     }
 }
 
-// Runs last, so recipe lists replaced by other mods (e.g. hideout overhauls) don't wipe ours
-[Injectable(TypePriority = OnLoadOrder.PostLoad + 1)]
+// Runs right after the database is loaded and before mods that tune every recipe (SVM's craft time multiplier is
+// Preload + 5), so multi-recipes get the same treatment as vanilla ones
+[Injectable(TypePriority = OnLoadOrder.Preload + 4)]
 public class ScarcityCraftingLoader(
     ISptLogger<ScarcityCraftingLoader> logger,
     HideoutTable hideoutTable,
@@ -90,16 +91,18 @@ public class ScarcityCraftingLoader(
 {
     public Task OnLoadAsync(CancellationToken cancellationToken)
     {
-        // TraderScarcityLoader runs earlier and has already loaded config.json
-        if (!AssortScarcity.Config.EnableRecipes)
+        // Runs before TraderScarcityLoader, so load config.json here - Load is shared, it's only read once
+        string modFolder = modHelper.GetAbsolutePathToModFolder(Assembly.GetExecutingAssembly());
+        ScarcityConfig config = ScarcityConfig.Load(modFolder, logger);
+        if (!config.EnableRecipes)
         {
             return Task.CompletedTask;
         }
         try
         {
-            var crafting = CraftingConfig.Load(modHelper.GetAbsolutePathToModFolder(Assembly.GetExecutingAssembly()), logger);
+            var crafting = CraftingConfig.Load(modFolder, logger);
             hideoutTable.Production.Recipes ??= [];
-            MultiRecipes.Apply(crafting, hideoutTable.Production.Recipes, templateTable.Items, logger, itemHelper, AssortScarcity.Config.LogRolls);
+            MultiRecipes.Apply(crafting, hideoutTable.Production.Recipes, templateTable.Items, logger, itemHelper, config.LogRolls);
         }
         catch (Exception ex)
         {
