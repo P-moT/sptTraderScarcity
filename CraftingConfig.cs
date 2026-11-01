@@ -13,7 +13,7 @@ public class ItemStack
     public int Count { get; set; } = 1;
 }
 
-/// One choice on either side of a recipe. Either a single stack (Item + Count) or a bundle (Items).
+// One choice on either side of a recipe. Either a single stack (Item + Count) or a bundle (Items).
 public class RecipeOption : ItemStack
 {
     public List<ItemStack>? Items { get; set; }
@@ -24,8 +24,8 @@ public class RecipeOption : ItemStack
     public List<ItemStack> Stacks => Items is { Count: > 0 } ? Items : [new ItemStack { Item = Item, Count = Count }];
 }
 
-/// A multi-option recipe. The player picks one AnyOf input and one OneOf output -
-/// the server expands it into one vanilla recipe per combination (see MultiRecipes).
+// A multi-option recipe. The player picks one AnyOf input and one OneOf output -
+// the server expands it into one vanilla recipe per combination (see MultiRecipes).
 public class MultiRecipe
 {
     // Stable key - generated recipe ids are derived from it, so renaming it orphans crafts in progress.
@@ -42,7 +42,7 @@ public class MultiRecipe
     public List<RecipeOption>? OneOf { get; set; }
 }
 
-/// Mirrors recipes.json.
+// Mirrors recipes.jsonc.
 public class CraftingConfig
 {
     public List<MultiRecipe> Recipes { get; set; } = [];
@@ -56,7 +56,7 @@ public class CraftingConfig
 
     public static CraftingConfig Load(string modFolder, ISptLogger<ScarcityCraftingLoader> logger)
     {
-        string path = Path.Combine(modFolder, "recipes.json");
+        string path = Path.Combine(modFolder, "recipes.jsonc");
         try
         {
             return JsonSerializer.Deserialize<CraftingConfig>(File.ReadAllText(path), JsonOptions) ?? new();

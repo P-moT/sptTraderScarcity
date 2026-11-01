@@ -9,8 +9,8 @@ using SPTarkov.Server.Core.Utils;
 
 namespace TraderScarcity;
 
-/// Tells the client plugin which generated recipes belong together: { recipeId: { Group, Input, Output } }.
-/// Empty when EnableRecipes is off, so the plugin has nothing to merge.
+// Tells the client plugin which generated recipes belong together: { recipeId: { Group, Input, Output } }.
+// Empty when EnableRecipes is off, so the plugin has nothing to merge.
 [Injectable]
 public class CraftGroupsRouter(JsonUtil jsonUtil, HttpResponseUtil httpResponseUtil) : StaticRouter(jsonUtil,
 [

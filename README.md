@@ -23,7 +23,7 @@ Settings live in `config.json` in the mod folder. Restart the server after chang
 | `LogRolls` | `false` | Log every stock roll to the server console. |
 | `IncludeModdedTraders` | `true` | Whether traders added by other mods are affected. |
 | `IncludeFence` | `false` | Whether Fence is affected. |
-| `EnableRecipes` | `true` | Add the multi-option crafting recipes from `recipes.json`. |
+| `EnableRecipes` | `true` | Add the multi-option crafting recipes from `recipes.jsonc`. |
 | `LoyaltyBumpChance` | `0.1` | Chance (0 to 1) for an in-stock LL2+ item to be sold one loyalty level lower until the next restock. e.g. if 20 LL2 items roll in stock, about 2 become available at LL1. |
 | `Ammo` | `0.30`, `10`–`90` | Loose rounds. |
 | `AmmoBox` | `0.30`, `1`–`1` | Ammo boxes. |
@@ -57,7 +57,7 @@ Outputs are worth roughly 1.2–1.6x their inputs at handbook prices.
 - **Client** (`BepInEx\plugins\TraderScarcity\TraderScarcity.Client.dll`) - folds each recipe into **one card** with `< Input 2/5 >` and `< Output 1/3 >` pickers. Hover a picker to list every option. Pickers lock while that recipe is crafting or has items waiting. The input picker sits at the left edge of the crafting window and the output picker at the right edge, level with their recipe (in Usable Crafting, at the edges of its details pane) - they stay put when switching options changes the recipe's length. Usable Crafting's grid tiles follow the picked option too (icon, count, and producing / ready highlights), and multi-option recipes stand out with their own background tint and an "inputs>outputs" badge (e.g. `3>5`) - both can be turned off or recoloured in the config. Layout (edges, or both in one corner), inset and size can be changed in the BepInEx config (F12).
 
 ### Writing your own
-Recipes live in `recipes.json` (comments allowed). Items are 24 character ids - the file explains every field. Mistakes are skipped with a warning in the server console rather than stopping the mod.
+Recipes live in `recipes.jsonc` (comments allowed). Items are 24 character ids - the file explains every field. Mistakes are skipped with a warning in the server console rather than stopping the mod.
 - Keep a recipe's `Id` and the order of its options stable - they decide the in-game recipe ids, and crafts in progress for a changed recipe are lost. Add new options at the end.
 - `Extras` are used up whichever input is picked, `Tools` are needed but kept, and an output can set its own `Minutes`.
 - `Color` (e.g. `"#2f6fd6"`) gives a recipe its own tile tint in Usable Crafting. The ammo presses use it for tiers: basic blue, rifle green, AP red.

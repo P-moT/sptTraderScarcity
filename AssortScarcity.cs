@@ -10,10 +10,10 @@ using TraderID = SPTarkov.Server.Core.Models.Enums.Traders;
 
 namespace TraderScarcity;
 
-/// Scarcity mode for trader stock.
-/// Every restock, each offer rolls whether it is in stock at all, and if so, how many.
-/// Out of stock = StackObjectsCount 0, so the offer stays visible but cannot be bought.
-/// Used both at server start (TraderScarcityLoader) and on every trader restock (ResetExpiredTraderPatch).
+// Scarcity mode for trader stock.
+// Every restock, each offer rolls whether it is in stock at all, and if so, how many.
+// Out of stock = StackObjectsCount 0, so the offer stays visible but cannot be bought.
+// Used both at server start (TraderScarcityLoader) and on every trader restock (ResetExpiredTraderPatch).
 public static class AssortScarcity
 {
     // Set from config.json by TraderScarcityLoader before the first roll.
@@ -37,8 +37,8 @@ public static class AssortScarcity
         TraderID.RAGMAN, TraderID.JAEGER, TraderID.LIGHTHOUSEKEEPER, TraderID.REF,
     ];
 
-    /// Re-roll stock for every root offer of a trader. Lightkeeper and Ref are left alone, and so are modded traders unless IncludeModdedTraders is on.
-    /// Fence is skipped here because his real stock is generated separately - see ApplyFence.
+    // Re-roll stock for every root offer of a trader. Lightkeeper and Ref are left alone, and so are modded traders unless IncludeModdedTraders is on.
+    // Fence is skipped here because his real stock is generated separately - see ApplyFence.
     public static void Apply(Trader trader, Dictionary<MongoId, TemplateItem> templates, ISptLogger<TraderScarcityLoader>? logger = null, ItemHelper? itemHelper = null)
     {
         if (trader?.Assort?.Items is null || trader.Base.Id == TraderID.LIGHTHOUSEKEEPER || trader.Base.Id == TraderID.FENCE || trader.Base.Id == TraderID.REF)
@@ -119,9 +119,9 @@ public static class AssortScarcity
         }
     }
 
-    /// Roll stock for Fence's generated assort (FenceService's cache - his entry in the traders table is only the pool it draws from).
-    /// Fence refreshes part of his stock every few minutes, so each offer is rolled once when it first appears rather than on every refresh.
-    /// No loyalty boon - Fence's levels come from scav karma, not normal trader loyalty.
+    // Roll stock for Fence's generated assort (FenceService's cache - his entry in the traders table is only the pool it draws from).
+    // Fence refreshes part of his stock every few minutes, so each offer is rolled once when it first appears rather than on every refresh.
+    // No loyalty boon - Fence's levels come from scav karma, not normal trader loyalty.
     public static void ApplyFence(TraderAssort? mainAssort, TraderAssort? discountAssort, Dictionary<MongoId, TemplateItem> templates, ISptLogger<TraderScarcityLoader>? logger = null)
     {
         if (!Config.IncludeFence)
@@ -155,7 +155,7 @@ public static class AssortScarcity
     // Offer ids already rolled, across Fence's main and discount assorts
     private static readonly HashSet<MongoId> RolledFenceOffers = new();
 
-    /// Roll whether an offer is in stock and how many. Returns false for offers that are left alone (currency exchange).
+    // Roll whether an offer is in stock and how many. Returns false for offers that are left alone (currency exchange).
     private static bool RollStock(Item offer, Dictionary<MongoId, TemplateItem> templates)
     {
         StockRule? rule = GetRule(offer.Template, templates);

@@ -14,9 +14,9 @@ using SPT.Reflection.Patching;
 
 namespace TraderScarcity.Client;
 
-/// Every production list (vanilla list and UsableCrafting's grid) is built from GetSortedSchemes.
-/// Keep one scheme per group - its "anchor" - at the position of its best ranked sibling (ready / producing first).
-/// The anchor is the lowest (input, output) sibling, so it stays the same between calls and views keyed by it stay valid.
+// Every production list (vanilla list and UsableCrafting's grid) is built from GetSortedSchemes.
+// Keep one scheme per group - its "anchor" - at the position of its best ranked sibling (ready / producing first).
+// The anchor is the lowest (input, output) sibling, so it stays the same between calls and views keyed by it stay valid.
 public class MergeSiblingsPatch : ModulePatch
 {
     protected override MethodBase GetTargetMethod()
@@ -63,8 +63,8 @@ public class MergeSiblingsPatch : ModulePatch
     }
 }
 
-/// When a card is shown for a group, show the sibling that matters instead: one that is producing or has items ready,
-/// else the player's last pick. Covers vanilla cards and UsableCrafting's details view - both go through this Show.
+// When a card is shown for a group, show the sibling that matters instead: one that is producing or has items ready,
+// else the player's last pick. Covers vanilla cards and UsableCrafting's details view - both go through this Show.
 public class ShowSelectedSiblingPatch : ModulePatch
 {
     protected override MethodBase GetTargetMethod()
@@ -109,7 +109,7 @@ public class ShowSelectedSiblingPatch : ModulePatch
     }
 }
 
-/// Lock / unlock the pickers as production starts, finishes and is collected.
+// Lock / unlock the pickers as production starts, finishes and is collected.
 public class RefreshPickerPatch : ModulePatch
 {
     protected override MethodBase GetTargetMethod()
@@ -124,8 +124,8 @@ public class RefreshPickerPatch : ModulePatch
     }
 }
 
-/// Favourites are stored per recipe, and each option of a multi-option recipe is its own recipe - so switching options
-/// dropped the star. Treat the whole group as one: favourite if any option is, sorted by its best placed option.
+// Favourites are stored per recipe, and each option of a multi-option recipe is its own recipe - so switching options
+// dropped the star. Treat the whole group as one: favourite if any option is, sorted by its best placed option.
 public class GroupFavoritePatch : ModulePatch
 {
     protected override MethodBase GetTargetMethod()
@@ -166,7 +166,7 @@ public class GroupFavoriteIndexPatch : ModulePatch
     }
 }
 
-/// Starring or un-starring one option applies to every option of the recipe, so the stored state stays consistent too.
+// Starring or un-starring one option applies to every option of the recipe, so the stored state stays consistent too.
 public class GroupFavoriteSetPatch : ModulePatch
 {
     protected override MethodBase GetTargetMethod()
@@ -196,8 +196,8 @@ public class GroupFavoriteSetPatch : ModulePatch
     }
 }
 
-/// The panel only refreshes cards whose recipe uses the changed item - checked against the anchor, which may not be the
-/// sibling on screen. Refresh every card instead so have/need counts stay right.
+// The panel only refreshes cards whose recipe uses the changed item - checked against the anchor, which may not be the
+// sibling on screen. Refresh every card instead so have/need counts stay right.
 public class ItemChangedPatch : ModulePatch
 {
     protected override MethodBase GetTargetMethod()

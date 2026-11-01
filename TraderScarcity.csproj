@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <None Update="config.json" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="recipes.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="recipes.jsonc" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- The client plugin is its own project (Client\TraderScarcity.Client.csproj) - keep its sources out of the server build -->
@@ -38,7 +38,7 @@
       <PackageModFolder>$(PackageStaging)SPT_Runtime\user\mods\$(AssemblyName)\</PackageModFolder>
     </PropertyGroup>
     <RemoveDir Directories="$(PackageStaging)" />
-    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll;$(OutputPath)config.json;$(OutputPath)recipes.json;$(MSBuildProjectDirectory)\LICENSE" DestinationFolder="$(PackageModFolder)" />
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll;$(OutputPath)config.json;$(OutputPath)recipes.jsonc;$(MSBuildProjectDirectory)\LICENSE" DestinationFolder="$(PackageModFolder)" />
     <!-- Client plugin (merges multi-option recipes into one card) - goes to BepInEx\plugins\TraderScarcity\ -->
     <MSBuild Projects="Client\TraderScarcity.Client.csproj" Properties="Configuration=Release;IsRestoring=true" Targets="Restore" />
     <MSBuild Projects="Client\TraderScarcity.Client.csproj" Properties="Configuration=Release" Targets="Build" />

@@ -10,17 +10,17 @@ using SPT.Common.Http;
 
 namespace TraderScarcity.Client;
 
-/// Position of a generated recipe in its multi-option recipe, as sent by the server.
+// Position of a generated recipe in its multi-option recipe, as sent by the server.
 public class GroupRef
 {
     public string Group;
     public int Input;
     public int Output;
-    // Optional "#RRGGBB" / "#RRGGBBAA" tile colour from recipes.json
+    // Optional "#RRGGBB" / "#RRGGBBAA" tile colour from recipes.jsonc
     public string Color;
 }
 
-/// A sibling recipe and where it sits in its group.
+// A sibling recipe and where it sits in its group.
 public readonly struct Sibling
 {
     public readonly ProductionScheme Scheme;
@@ -53,7 +53,7 @@ internal static class CraftGroups
         return recipeId != null && Load() && _byRecipe.TryGetValue(recipeId, out groupRef);
     }
 
-    /// Every recipe of the group this producer knows about, ordered by input then output.
+    // Every recipe of the group this producer knows about, ordered by input then output.
     public static List<Sibling> Siblings(string group, ItemsProducerBase producer)
     {
         List<Sibling> siblings = new List<Sibling>();
@@ -71,8 +71,8 @@ internal static class CraftGroups
         return siblings.OrderBy(s => s.Ref.Input).ThenBy(s => s.Ref.Output).ToList();
     }
 
-    /// The sibling a card or tile for this recipe should show: one that is producing or has items ready, else the player's
-    /// last pick, else the recipe itself. Recipes outside a group come back unchanged.
+    // The sibling a card or tile for this recipe should show: one that is producing or has items ready, else the player's
+    // last pick, else the recipe itself. Recipes outside a group come back unchanged.
     public static ProductionScheme Effective(ProductionScheme scheme, ItemsProducerBase producer)
     {
         if (scheme == null || producer == null || !TryGet(scheme._id, out GroupRef groupRef))
@@ -88,13 +88,13 @@ internal static class CraftGroups
         return chosen.Scheme ?? scheme;
     }
 
-    /// Whether two recipes are the same recipe or siblings of one multi-option recipe.
+    // Whether two recipes are the same recipe or siblings of one multi-option recipe.
     public static bool SameGroup(BaseHideoutScheme a, BaseHideoutScheme b)
     {
         return a == b || (a != null && b != null && TryGet(a._id, out GroupRef refA) && TryGet(b._id, out GroupRef refB) && refA.Group == refB.Group);
     }
 
-    /// Every recipe id in the group of this recipe, or null if it isn't in one.
+    // Every recipe id in the group of this recipe, or null if it isn't in one.
     public static List<string> GroupIds(string recipeId)
     {
         return TryGet(recipeId, out GroupRef groupRef) && _byGroup.TryGetValue(groupRef.Group, out List<string> ids) ? ids : null;

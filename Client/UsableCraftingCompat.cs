@@ -15,10 +15,10 @@ using UnityEngine;
 
 namespace TraderScarcity.Client;
 
-/// Usable Crafting replaces the production list with a grid of item tiles plus a details pane.
-/// Its tiles are built from the merged list's anchor recipe, so without this they'd always show the first output and
-/// miss producing / ready highlights for the other options. It's a soft dependency, so everything here goes through
-/// reflection and is only switched on when it's installed.
+// Usable Crafting replaces the production list with a grid of item tiles plus a details pane.
+// Its tiles are built from the merged list's anchor recipe, so without this they'd always show the first output and
+// miss producing / ready highlights for the other options. It's a soft dependency, so everything here goes through
+// reflection and is only switched on when it's installed.
 internal static class UsableCraftingCompat
 {
     private static Type _gridType;
@@ -60,7 +60,7 @@ internal static class UsableCraftingCompat
         Plugin.Log.LogInfo("Usable Crafting found - its tiles will follow the picked recipe option");
     }
 
-    /// After the details pane switches option, rebuild that recipe's tile so it shows the new output.
+    // After the details pane switches option, rebuild that recipe's tile so it shows the new output.
     public static void RefreshTile(ProduceView detailsView, ShowArgs args)
     {
         if (!Available || detailsView == null)
@@ -111,8 +111,8 @@ internal static class UsableCraftingCompat
         }
     }
 
-    /// Build each tile from the sibling that matters - so its icon, count and producing / ready highlights are for the
-    /// option actually being crafted or picked, not the first one.
+    // Build each tile from the sibling that matters - so its icon, count and producing / ready highlights are for the
+    // option actually being crafted or picked, not the first one.
     public class TileShowsSelectedSiblingPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod() => _tileFactoryShow;
@@ -140,14 +140,14 @@ internal static class UsableCraftingCompat
         }
     }
 
-    /// The tile's recipe, if it belongs to a multi-option recipe.
+    // The tile's recipe, if it belongs to a multi-option recipe.
     private static bool TryGetGroup(ItemView tile, out GroupRef groupRef)
     {
         groupRef = null;
         return Traverse.Create(tile).Property("Scheme").GetValue() is ProductionScheme scheme && CraftGroups.TryGet(scheme._id, out groupRef);
     }
 
-    /// "3>5" in the tile's bottom-left corner - 3 input options, 5 outputs. The rest of the tile is Usable Crafting's.
+    // "3>5" in the tile's bottom-left corner - 3 input options, 5 outputs. The rest of the tile is Usable Crafting's.
     private static void ApplyBadge(ItemView tile, ItemsProducerBase producer)
     {
         RemoveBadge(tile);
@@ -198,7 +198,7 @@ internal static class UsableCraftingCompat
         text.raycastTarget = false;
     }
 
-    // The recipe's own colour from recipes.json, else the configured tint. A colour without opacity digits borrows the
+    // The recipe's own colour from recipes.jsonc, else the configured tint. A colour without opacity digits borrows the
     // configured tint's opacity, so it stays a background wash rather than covering the item icon.
     private static Color TintFor(GroupRef groupRef)
     {
@@ -259,8 +259,8 @@ internal static class UsableCraftingCompat
         }
     }
 
-    /// The grid remembers its selected recipe between visits and reselects it by comparing against the list - which
-    /// only holds anchors. If a sibling was selected, point it at its group's anchor so the selection comes back.
+    // The grid remembers its selected recipe between visits and reselects it by comparing against the list - which
+    // only holds anchors. If a sibling was selected, point it at its group's anchor so the selection comes back.
     public class RestoreSelectionPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod() => AccessTools.Method(_gridType, "Show");
@@ -284,7 +284,7 @@ internal static class UsableCraftingCompat
         }
     }
 
-    /// Starring a recipe in the details pane looks its tile up by recipe - a sibling isn't a key, the anchor is.
+    // Starring a recipe in the details pane looks its tile up by recipe - a sibling isn't a key, the anchor is.
     public class FavoriteLookupPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod() => AccessTools.Method(_gridType, "OnFavoriteUpdateHandler");

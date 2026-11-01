@@ -17,7 +17,7 @@ using UnityEngine.UI;
 
 namespace TraderScarcity.Client;
 
-/// What a ProduceView was shown with, so it can be re-shown with a sibling recipe.
+// What a ProduceView was shown with, so it can be re-shown with a sibling recipe.
 public class ShowArgs
 {
     public readonly ItemUiContext ItemUiContext;
@@ -38,9 +38,9 @@ public class ShowArgs
     }
 }
 
-/// "< Input 2/5 >  < Output 1/3 >" strip on a recipe card. Switching re-shows the card with the matching sibling recipe,
-/// so requirements, have/need counts and the Start button are all the game's own UI for a real recipe.
-/// Locked while any recipe of the group is producing or has items waiting.
+// "< Input 2/5 >  < Output 1/3 >" strip on a recipe card. Switching re-shows the card with the matching sibling recipe,
+// so requirements, have/need counts and the Start button are all the game's own UI for a real recipe.
+// Locked while any recipe of the group is producing or has items waiting.
 public class GroupPicker : MonoBehaviour
 {
     private const string ObjectName = "TraderScarcityGroupPicker";
@@ -204,8 +204,8 @@ public class GroupPicker : MonoBehaviour
         _output.Panel.anchoredPosition = new Vector2(right - inset.x, inset.y);
     }
 
-    /// The visible area of the production list the card scrolls in - pickers beyond it would be clipped by its mask.
-    /// A card that isn't in a list (Usable Crafting's details pane) is its own window.
+    // The visible area of the production list the card scrolls in - pickers beyond it would be clipped by its mask.
+    // A card that isn't in a list (Usable Crafting's details pane) is its own window.
     private static RectTransform FindWindow(ProduceView view)
     {
         ScrollRect scroll = view.GetComponentInParent<ScrollRect>(true);
@@ -299,7 +299,7 @@ public class GroupPicker : MonoBehaviour
         }
     }
 
-    /// Tooltip listing every option, the current one marked.
+    // Tooltip listing every option, the current one marked.
     private string Describe(bool input)
     {
         if (_view == null || _view.Scheme == null || !CraftGroups.TryGet(_view.Scheme._id, out GroupRef current))
@@ -357,7 +357,7 @@ public class GroupPicker : MonoBehaviour
         return text;
     }
 
-    /// "< Label n/m >" on its own background, so input and output can sit in different places on the card
+    // "< Label n/m >" on its own background, so input and output can sit in different places on the card
     private class Segment
     {
         public readonly RectTransform Panel;
@@ -434,7 +434,7 @@ public class GroupPicker : MonoBehaviour
         }
     }
 
-    /// Shows the game's own tooltip on hover.
+    // Shows the game's own tooltip on hover.
     private class Tooltip : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         public Func<string> Describe;

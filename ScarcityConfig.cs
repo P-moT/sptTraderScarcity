@@ -14,9 +14,7 @@ public class StockRule
     public int Max { get; set; }
 }
 
-/// <summary>
-/// Mirrors config.json. Defaults here are used for anything missing from the file, or for everything if the file can't be read.
-/// </summary>
+// Mirrors config.json. Defaults here are used for anything missing from the file, or for everything if the file can't be read.
 public class ScarcityConfig
 {
     // Print a summary to the server console on every roll (startup + each restock).
@@ -28,7 +26,7 @@ public class ScarcityConfig
     // Also roll stock for Fence. Off by default - his rotating stock is already random, whatever he has he has.
     public bool IncludeFence { get; set; } = false;
 
-    // Add the multi-option crafting recipes from recipes.json.
+    // Add the multi-option crafting recipes from recipes.jsonc.
     public bool EnableRecipes { get; set; } = true;
 
     // Boon - chance an in-stock LL2+ offer is sold one loyalty level lower for this restock.
