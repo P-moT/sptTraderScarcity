@@ -1,8 +1,9 @@
 // TraderScarcity - multi-option crafting recipes.
 //
 // Each recipe lets the player pick ONE input from "AnyOf" and ONE output from "OneOf".
-//   Id       - unique, stable name. Changing it (or reordering AnyOf/OneOf) changes the recipe in game, and crafts in progress are lost.
-//              Add new options at the END of a list to keep existing ones intact.
+//   Id       - unique, stable name. Each option's in-game recipe is tied to its Id and its position in AnyOf/OneOf.
+//              Renaming an Id loses crafts in progress for that recipe. Reordering or removing options changes which
+//              output an in-progress craft gives - or loses it, if its slot no longer exists. Add new options at the END.
 //   Area     - Workbench, MedStation, NutritionUnit (Kitchen), IntelligenceCenter, ... or the area number
 //   Level    - area level required
 //   Minutes  - craft time. An output can override it with its own "Minutes".
@@ -12,7 +13,7 @@
 //   AnyOf    - input options: { "Item": id, "Count": n } or a bundle { "Items": [ { "Item": id, "Count": n }, ... ] }
 //   OneOf    - output options: { "Item": id, "Count": n, "Minutes": optional }
 // Items are 24 character template ids. Bad entries are skipped with a warning in the server console.
-// Default balance: outputs are worth roughly 1.2-1.6x the inputs (handbook prices), with no input -> output loops.
+// Default balance: outputs are just below the handbook price of the inputs.
 {
     "Recipes": [
         // ---------------------------------------------------------------- Ammo
@@ -31,10 +32,9 @@
                     { "Item": "5e340dcdcb6d5863cc5e5efb", "Count": 1 }  // VOG-25 Khattabka improvised hand grenade
                 ] },
                 { "Item": "58d3db5386f77426186285a0", "Count": 1 },     // M67 hand grenade
-                { "Item": "56dff216d2720bbd668b4568", "Count": 200 },   // 5.45x39mm HP
-                { "Item": "59e6927d86f77411da468256", "Count": 200 },   // 5.56x45mm HP
-                { "Item": "59e4d3d286f774176a36250a", "Count": 150 },   // 7.62x39mm HP
-                { "Item": "573719762459775a626ccbc1", "Count": 800 }    // 9x18mm PM P gzh
+                { "Item": "56dff216d2720bbd668b4568", "Count": 100 },   // 5.45x39mm HP
+                { "Item": "59e6927d86f77411da468256", "Count": 100 },   // 5.56x45mm HP
+                { "Item": "59e4d3d286f774176a36250a", "Count": 100 }    // 7.62x39mm HP
             ],
             "OneOf": [
                 { "Item": "590c5a7286f7747884343aea", "Count": 1 }      // Gunpowder "Kite"
@@ -50,41 +50,40 @@
                 { "Item": "590c5a7286f7747884343aea", "Count": 1 }      // Gunpowder "Kite"
             ],
             "OneOf": [
-                { "Item": "56d59d3ad2720bdb418b4577", "Count": 100 },   // 9x19mm Pst gzh
-                { "Item": "5737207f24597760ff7b25f2", "Count": 100 },   // 9x18mm PM PSV
+                { "Item": "59e6920f86f77411d82aa167", "Count": 100 },   // 5.56x45mm FMJ
+                { "Item": "5e023e6e34d52a55c3304f71", "Count": 75 },    // 7.62x51mm TCW SP
+                { "Item": "56d59d3ad2720bdb418b4577", "Count": 200 },   // 9x19mm Pst gzh
+                { "Item": "5737207f24597760ff7b25f2", "Count": 200 },   // 9x18mm PM PSV
                 { "Item": "56dff3afd2720bba668b4567", "Count": 100 },   // 5.45x39mm PS gs
-                { "Item": "5656d7c34bdc2d9d198b4587", "Count": 50 },    // 7.62x39mm PS gzh
-                { "Item": "5d6e6806a4b936088465b17e", "Count": 50 },    // 12/70 8.5mm Magnum buckshot
-                { "Item": "5ba2678ad4351e44f824b344", "Count": 50 }     // 4.6x30mm FMJ SX
+                { "Item": "64b7af5a8532cf95ee0a0dbd", "Count": 90 },    // 7.62x39mm FMJ
+                { "Item": "5d6e6806a4b936088465b17e", "Count": 60 }     // 12/70 8.5mm Magnum buckshot
             ]
         },
         {
-            "Id": "ammo-press-rifle",
+            "Id": "ammo-press-intermediate",
             "Color": "#2f9e4a",                                        // T2 - green
             "Area": "Workbench",
             "Level": 2,
-            "Minutes": 60,
+            "Minutes": 45,
             "Tools": [
                 "544fb5454bdc2df8738b456a"                              // Leatherman Multitool
             ],
             "AnyOf": [
                 { "Item": "5d6fc87386f77449db3db94e", "Count": 1 },     // Gunpowder "Hawk"
                 { "Item": "5d6fc78386f77449d825f9dc", "Count": 1 },     // Gunpowder "Eagle"
-                { "Items": [
-                    { "Item": "590c5a7286f7747884343aea", "Count": 2 }, // Gunpowder "Kite"
-                    { "Item": "57347b8b24597737dd42e192", "Count": 1 }  // Classic matches
-                ] }
+                { "Item": "590c5a7286f7747884343aea", "Count": 3 }      // Gunpowder "Kite"
             ],
             "OneOf": [
-                { "Item": "54527a984bdc2d4e668b4567", "Count": 100 },   // 5.56x45mm M855
-                { "Item": "58dd3ad986f77403051cba8f", "Count": 75 },   // 7.62x51mm M80
-                { "Item": "5887431f2459777e1612938f", "Count": 75 },    // 7.62x54mm R LPS gzh
-                { "Item": "619636be6db0f2477964e710", "Count": 75 },   // .300 Blackout M62 Tracer
-                { "Item": "5c0d668f86f7747ccb7f13b2", "Count": 75 }    // 9x39mm SPP gs
+                { "Item": "54527a984bdc2d4e668b4567", "Count": 150 },   // 5.56x45mm M855
+                { "Item": "58dd3ad986f77403051cba8f", "Count": 70 },    // 7.62x51mm M80
+                { "Item": "5887431f2459777e1612938f", "Count": 60 },    // 7.62x54mm R LPS gzh
+                { "Item": "619636be6db0f2477964e710", "Count": 75 },    // .300 Blackout M62 Tracer
+                { "Item": "5c0d668f86f7747ccb7f13b2", "Count": 70 },    // 9x39mm SPP gs
+                { "Item": "5ba2678ad4351e44f824b344", "Count": 75 }    // 4.6x30mm FMJ SX
             ]
         },
         {
-            "Id": "ammo-press-ap",
+            "Id": "ammo-press-advanced",
             "Color": "#c8322f",                                        // T3 - red
             "Area": "Workbench",
             "Level": 3,
@@ -101,14 +100,15 @@
                 { "Item": "5d6fc87386f77449db3db94e", "Count": 2 }      // Gunpowder "Hawk"
             ],
             "OneOf": [
-                { "Item": "54527ac44bdc2d36668b4567", "Count": 120 },   // 5.56x45mm M855A1
-                { "Item": "6768c25aa7b238f14a08d3f6", "Count": 70 },    // 7.62x51mm M80A1
-                { "Item": "59e77a2386f7742ee578960a", "Count": 90 },    // 7.62x54mm R PS gzh
-                { "Item": "5fd20ff893a8961fc660a954", "Count": 95 },    // .300 Blackout AP
-                { "Item": "5c0d688c86f77413ae3407b2", "Count": 65 },    // 9x39mm BP gs
-                { "Item": "5efb0da7a29a85116f6ea05f", "Count": 140 },   // 9x19mm PBP gzh
-                { "Item": "5ba26835d4351e0035628ff5", "Count": 110 },   // 4.6x30mm AP SX
-                { "Item": "5d6e68a8a4b9360b6c0d54e2", "Count": 95 }     // 12/70 AP-20 armor-piercing slug
+                { "Item": "54527ac44bdc2d36668b4567", "Count": 90 },    // 5.56x45mm M855A1
+                { "Item": "59e690b686f7746c9f75e848", "Count": 50 },    // 5.56x45mm M995
+                { "Item": "59e0d99486f7744a32234762", "Count": 55 },    // 7.62x39mm BP gzh
+                { "Item": "6768c25aa7b238f14a08d3f6", "Count": 50 },    // 7.62x51mm M80A1
+                { "Item": "59e77a2386f7742ee578960a", "Count": 65 },    // 7.62x54mm R PS gzh
+                { "Item": "560d61e84bdc2da74d8b4571", "Count": 45 },    // 7.62x54mm R SNB gzh
+                { "Item": "5fd20ff893a8961fc660a954", "Count": 70 },    // .300 Blackout AP
+                { "Item": "5c0d688c86f77413ae3407b2", "Count": 45 },    // 9x39mm BP gs
+                { "Item": "5ba26835d4351e0035628ff5", "Count": 85 }     // 4.6x30mm AP SX
             ]
         },
 
@@ -119,14 +119,14 @@
             "Level": 1,
             "Minutes": 30,
             "AnyOf": [
-                { "Item": "5d1b3a5d86f774252167ba22", "Count": 1 },     // Pile of meds
+                { "Item": "5d1b3a5d86f774252167ba22", "Count": 2 },     // Pile of meds
                 { "Item": "544fb37f4bdc2dee738b4567", "Count": 1 },     // Analgin painkillers
                 { "Item": "5755356824597772cb798962", "Count": 1 },     // AI-2 medkit
-                { "Item": "544fb25a4bdc2dfb738b4567", "Count": 1 }      // Aseptic bandage
+                { "Item": "544fb25a4bdc2dfb738b4567", "Count": 5 }      // Aseptic bandage
             ],
             "OneOf": [
-                { "Item": "5751a25924597722c463c472", "Count": 1 },     // Army bandage
-                { "Item": "5e831507ea0a7c419c2f9bd9", "Count": 2 },     // Esmarch tourniquet
+                { "Item": "5751a25924597722c463c472", "Count": 3 },     // Army bandage
+                { "Item": "5e831507ea0a7c419c2f9bd9", "Count": 3 },     // Esmarch tourniquet
                 { "Item": "5af0454c86f7746bf20992e8", "Count": 1 }      // Aluminum splint
             ]
         },
@@ -159,7 +159,7 @@
             "Level": 3,
             "Minutes": 180,
             "AnyOf": [
-                { "Item": "5c0e530286f7747fa1419862", "Count": 2 },     // Propital regenerative stimulant injector
+                { "Item": "5c0e530286f7747fa1419862", "Count": 3 },     // Propital regenerative stimulant injector
                 { "Items": [
                     { "Item": "5c0e531286f7747fa54205c2", "Count": 1 }, // SJ1 TGLabs combat stimulant injector
                     { "Item": "5d1b3f2d86f774253763b735", "Count": 1 }  // Disposable syringe
@@ -229,6 +229,7 @@
         // ---------------------------------------------------------------- Barter items
         {
             "Id": "electronics-salvage",
+            "Color": "#2f6fd6",                                        // T1 - blue
             "Area": "Workbench",
             "Level": 1,
             "Minutes": 60,
@@ -246,46 +247,65 @@
                 { "Item": "590a386e86f77429692b27ab", "Count": 2 }      // Damaged hard drive
             ],
             "OneOf": [
-                { "Item": "5c06779c86f77426e00dd782", "Count": 3 },     // Bundle of wires
+                { "Item": "5c06779c86f77426e00dd782", "Count": 4 },     // Bundle of wires
                 { "Item": "5c06782b86f77426df5407d2", "Count": 9 },     // Capacitors
                 { "Item": "590a3b0486f7743954552bdb", "Count": 2 },     // Printed circuit board
-                { "Item": "59e36c6f86f774176c10a2a7", "Count": 2 },     // Power cord
                 { "Item": "590a391c86f774385a33c404", "Count": 2 }      // Magnet
             ]
         },
         {
             "Id": "hardware-salvage",
+            "Color": "#2f9e4a",                                        // T2 - green
             "Area": "Workbench",
             "Level": 2,
             "Minutes": 90,
             "Tools": [
                 "590c2b4386f77425357b6123"                              // Pliers
             ],
+            // Strip worn-out machinery for fasteners and stock material
             "AnyOf": [
                 { "Items": [
-                    { "Item": "590c31c586f774245e3141b2", "Count": 2 }, // Pack of nails
-                    { "Item": "59e35ef086f7741777737012", "Count": 2 }  // Pack of screws
+                    { "Item": "5d1c774f86f7746d6620f8db", "Count": 1 }, // Radiator helix
+                    { "Item": "59e35cbb86f7741778269d83", "Count": 1 }  // Corrugated hose
                 ] },
-                { "Items": [
-                    { "Item": "590c311186f77424d1667482", "Count": 1 }, // Wrench
-                    { "Item": "590c31c586f774245e3141b2", "Count": 2 }, // Pack of nails
-                    { "Item": "590c2d8786f774245b1f03f3", "Count": 1 }  // Screwdriver
-                ] },
-                { "Items": [
-                    { "Item": "59e35cbb86f7741778269d83", "Count": 1 }, // Corrugated hose
-                    { "Item": "57347c1124597737fb1379e3", "Count": 2 }  // Duct tape
-                ] },
-                { "Items": [
-                    { "Item": "590a3c0a86f774385a33c450", "Count": 1 }, // Spark plug
-                    { "Item": "5d1b313086f77425227d1678", "Count": 1 }  // Phase control relay
-                ] }
+                { "Item": "590a3c0a86f774385a33c450", "Count": 2 },     // Spark plug
+                { "Item": "619cbf476b8a1b37a54eebf8", "Count": 1 }      // Military corrugated tube
             ],
             "OneOf": [
                 { "Item": "57347c5b245977448d35f6e1", "Count": 2 },     // Bolts
-                { "Item": "61bf7b6302b3924be92fa8c3", "Count": 4 },     // Metal spare parts
-                { "Item": "5e2af29386f7746d4159f077", "Count": 1 },     // KEKTAPE duct tape
-                { "Item": "5734795124597738002c6176", "Count": 10 },    // Insulating tape
-                { "Item": "5e2af22086f7746d3f3c33fa", "Count": 1 }      // Tube of Poxeram cold welding
+                { "Item": "57347c77245977448d35f6e2", "Count": 3 },     // Screw nuts
+                { "Item": "61bf7b6302b3924be92fa8c3", "Count": 5 },     // Metal spare parts
+                { "Item": "5734795124597738002c6176", "Count": 12 },    // Insulating tape
+                { "Item": "590c31c586f774245e3141b2", "Count": 6 }      // Pack of nails
+            ]
+        },
+        {
+            "Id": "heavy-salvage",
+            "Color": "#c8322f",                                        // T3 - red
+            "Area": "Workbench",
+            "Level": 3,
+            "Minutes": 180,
+            "Tools": [
+                "590c2e1186f77425357b6124"                              // Toolset
+            ],
+            // Strip heavy machinery for bulk hardware and copper wiring
+            "AnyOf": [
+                { "Item": "5733279d245977289b77ec24", "Count": 1 },     // Car battery
+                { "Items": [
+                    { "Item": "5d1b2fa286f77425227d1674", "Count": 1 }, // Electric motor
+                    { "Item": "590a3c0a86f774385a33c450", "Count": 2 }  // Spark plug
+                ] },
+                { "Item": "59e35de086f7741778269d84", "Count": 2 },     // Electric drill
+                { "Items": [
+                    { "Item": "5d1b36a186f7742523398433", "Count": 1 }, // Metal fuel tank
+                    { "Item": "59e35cbb86f7741778269d83", "Count": 1 }  // Corrugated hose
+                ] }
+            ],
+            "OneOf": [
+                { "Item": "57347c5b245977448d35f6e1", "Count": 8 },     // Bolts
+                { "Item": "57347c77245977448d35f6e2", "Count": 10 },    // Screw nuts
+                { "Item": "61bf7b6302b3924be92fa8c3", "Count": 18 },    // Metal spare parts
+                { "Item": "5c06779c86f77426e00dd782", "Count": 12 }     // Bundle of wires
             ]
         }
     ]
