@@ -4,6 +4,8 @@
 ### - Default values are how I prefer them, but they can be changed to your liking.
 ### - Modded traders can be excluded.
 ### - Due to Traders not having as many items, they may be more willing to sell exclusive stock.
+---
+Directly inspired by the trader behavior of the original [Realism Mod](https://sp-mod.com/mod/416/spt-realism-mod) for 3.11 by [Fontaine](https://sp-mod.com/user/6053/fontaine)
 
 ## Config
 
