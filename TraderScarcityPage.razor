@@ -1,0 +1,210 @@
+@* TraderScarcity - Copyright (C) 2026 P_moT
+   SPDX-License-Identifier: GPL-3.0-only *@
+@page "/traderscarcity"
+@using System.Reflection
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using SPTarkov.Server.Core.Helpers.Server
+@using SPTarkov.Server.Web.Layout
+@attribute [Authorize(Policy = "Administrator")]
+@layout BaseMudBlazorLayout
+@inject ModHelper ModHelper
+
+<PageTitle>Trader Scarcity</PageTitle>
+
+<style>
+    .scarcity-page { padding: 72px 24px 24px; display: flex; flex-direction: column; gap: 16px; }
+    .scarcity-columns { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+    .scarcity-settings { flex: 0 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+    .scarcity-recipes { flex: 1 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+    .scarcity-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .scarcity-section { display: flex; flex-direction: column; gap: 4px; }
+    .scarcity-table td { vertical-align: top; }
+</style>
+
+<div class="scarcity-page">
+    <div class="scarcity-columns">
+    <div class="scarcity-settings">
+    <MudText Typo="Typo.h5">Trader Scarcity</MudText>
+    <MudText Typo="Typo.body2">Every restock, each trader offer rolls whether it is in stock at all, and if so, how many. Saved changes are written to config.json and apply from each trader's next restock, without restarting the server.</MudText>
+
+    @if (ScarcityConfig.LoadError != null)
+    {
+        <MudAlert Severity="Severity.Error">@ScarcityConfig.LoadError The mod is running on its defaults. Fix the file and restart the server. Saving is disabled so nothing in it is lost.</MudAlert>
+    }
+    @if (_status != null)
+    {
+        <MudAlert Severity="_statusSeverity" ShowCloseIcon="true" CloseIconClicked="() => _status = null">@_status</MudAlert>
+    }
+    @if (RecipesNeedRestart)
+    {
+        <MudAlert Severity="Severity.Info">Crafting recipes are only added when the server starts. Restart the server (and the game) for the change to Enable recipes to take effect.</MudAlert>
+    }
+
+    <MudPaper Class="pa-4" Outlined="true">
+        <div class="scarcity-section">
+            <MudText Typo="Typo.h6">Traders</MudText>
+            <MudSwitch T="bool" Value="_config.IncludeModdedTraders" ValueChanged="v => Set(() => _config.IncludeModdedTraders = v)" Color="Color.Primary"
+                       Label="Include modded traders" />
+            <MudText Typo="Typo.caption">Also roll stock for traders added by other mods. Off, only the base game traders are affected; a modded trader goes back to full stock at its next restock.</MudText>
+            <MudSwitch T="bool" Value="_config.IncludeFence" ValueChanged="v => Set(() => _config.IncludeFence = v)" Color="Color.Primary"
+                       Label="Include Fence" />
+            <MudText Typo="Typo.caption">Also roll Fence's stock. Each of his offers is rolled once, when it first appears in his rotation.</MudText>
+        </div>
+    </MudPaper>
+
+    <MudPaper Class="pa-4" Outlined="true">
+        <div class="scarcity-section">
+            <MudText Typo="Typo.h6">Stock</MudText>
+            <MudText Typo="Typo.body2">In-stock chance is how likely an offer is to be in stock after a restock. When it is, the trader has between Min and Max of it.</MudText>
+            <MudSimpleTable Dense="true" Elevation="0" Class="scarcity-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>In-stock chance (%)</th>
+                        <th>Min</th>
+                        <th>Max</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ((string name, string description, Func<ScarcityConfig, StockRule> get) in Categories)
+                    {
+                        StockRule rule = get(_config);
+                        <tr>
+                            <td>
+                                <MudText Typo="Typo.body1">@name</MudText>
+                                <MudText Typo="Typo.caption">@description</MudText>
+                            </td>
+                            <td>
+                                <MudNumericField T="double" Value="Percent(rule.InStockChance)" ValueChanged="v => Set(() => rule.InStockChance = FromPercent(v))"
+                                                 Min="0" Max="100" Step="5" Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 130px" />
+                            </td>
+                            <td>
+                                <MudNumericField T="int" Value="rule.Min" ValueChanged="v => Set(() => rule.Min = v)" Min="1" Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 110px"
+                                                 Error="@(rule.Min < 1)" ErrorText="At least 1" />
+                            </td>
+                            <td>
+                                <MudNumericField T="int" Value="rule.Max" ValueChanged="v => Set(() => rule.Max = v)" Min="1" Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 110px"
+                                                 Error="@(rule.Max < rule.Min)" ErrorText="Can't be below Min" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </MudSimpleTable>
+        </div>
+    </MudPaper>
+
+    <MudPaper Class="pa-4" Outlined="true">
+        <div class="scarcity-section">
+            <MudText Typo="Typo.h6">Loyalty boon</MudText>
+            <MudNumericField T="double" Label="Loyalty boon chance (%)" Value="Percent(_config.LoyaltyBumpChance)" ValueChanged="v => Set(() => _config.LoyaltyBumpChance = FromPercent(v))"
+                             Min="0" Max="100" Step="1" Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 220px" />
+            <MudText Typo="Typo.caption">Chance for an in-stock LL2+ offer to be sold one loyalty level lower until the next restock. At 10%, if 20 LL2 offers roll in stock, about 2 become available at LL1. Quest-locked offers are never lowered.</MudText>
+        </div>
+    </MudPaper>
+
+    <MudPaper Class="pa-4" Outlined="true">
+        <div class="scarcity-section">
+            <MudText Typo="Typo.h6">Crafting</MudText>
+            <MudSwitch T="bool" Value="_config.EnableRecipes" ValueChanged="v => Set(() => _config.EnableRecipes = v)" Color="Color.Primary"
+                       Label="Enable recipes" />
+            <MudText Typo="Typo.caption">Add the multi-option crafting recipes from recipes.jsonc. Takes effect after a server restart.</MudText>
+        </div>
+    </MudPaper>
+
+    <MudPaper Class="pa-4" Outlined="true">
+        <div class="scarcity-section">
+            <MudText Typo="Typo.h6">Logging</MudText>
+            <MudSwitch T="bool" Value="_config.LogRolls" ValueChanged="v => Set(() => _config.LogRolls = v)" Color="Color.Primary"
+                       Label="Log rolls" />
+            <MudText Typo="Typo.caption">Print a summary to the server console on every stock roll, including each loyalty boon.</MudText>
+        </div>
+    </MudPaper>
+
+    <div class="scarcity-row">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Disabled="@(!_dirty || !IsValid || ScarcityConfig.LoadError != null)">Save settings</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="Revert" Disabled="@(!_dirty)">Discard changes</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="ResetToDefaults">Reset to defaults</MudButton>
+        @if (_dirty)
+        {
+            <MudText Typo="Typo.body2">Unsaved changes</MudText>
+        }
+    </div>
+    </div>
+
+    <div class="scarcity-recipes">
+        <RecipeEditor />
+    </div>
+    </div>
+</div>
+
+@code {
+    private static readonly (string Name, string Description, Func<ScarcityConfig, StockRule> Get)[] Categories =
+    {
+        ("Ammo", "Loose rounds", config => config.Ammo),
+        ("Ammo boxes", "Boxed ammo", config => config.AmmoBox),
+        ("Gear", "Weapons, armor, plates, helmets, rigs, backpacks, weapon mods", config => config.Gear),
+        ("Other", "Everything else: meds, provisions, barter items, keys, containers", config => config.Other),
+    };
+
+    private ScarcityConfig _config = new();
+    private bool _dirty;
+    private string? _status;
+    private Severity _statusSeverity = Severity.Success;
+
+    private string ModFolder => ModHelper.GetAbsolutePathToModFolder(Assembly.GetExecutingAssembly());
+
+    private bool IsValid => _config.LoyaltyBumpChance is >= 0 and <= 1
+        && Categories.Select(category => category.Get(_config))
+            .All(rule => rule.InStockChance is >= 0 and <= 1 && rule.Min >= 1 && rule.Max >= rule.Min);
+
+    // Recipes are added once at startup, so a saved change to EnableRecipes waits for a restart
+    private bool RecipesNeedRestart => ScarcityConfig.AtStartup is { } startup && AssortScarcity.Config.EnableRecipes != startup.EnableRecipes;
+
+    protected override void OnInitialized()
+    {
+        _config = AssortScarcity.Config.Clone();
+    }
+
+    private void Set(Action change)
+    {
+        change();
+        _dirty = true;
+    }
+
+    private static double Percent(double chance) => Math.Round(chance * 100, 2);
+
+    private static double FromPercent(double percent) => Math.Round(Math.Clamp(percent, 0, 100) / 100, 4);
+
+    private void Save()
+    {
+        try
+        {
+            ScarcityConfig.Save(ModFolder, _config);
+            _dirty = false;
+            _statusSeverity = Severity.Success;
+            _status = "Saved. Trader stock follows these settings from each trader's next restock.";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            _statusSeverity = Severity.Error;
+            _status = $"Could not save: {ex.Message}";
+        }
+    }
+
+    private void Revert()
+    {
+        _config = AssortScarcity.Config.Clone();
+        _dirty = false;
+        _status = null;
+    }
+
+    // Only fills the form - nothing is written until Save
+    private void ResetToDefaults()
+    {
+        _config = new ScarcityConfig();
+        _dirty = true;
+        _status = null;
+    }
+}

@@ -16,7 +16,9 @@ Directly inspired by the trader behavior of the original [Realism Mod](https://s
 
 ## Config
 
-Settings live in `config.json` in the mod folder. Restart the server after changing them.
+Every setting can be changed in the SPT web interface (SIC) on the **Trader Scarcity** page. Saved changes are written to `config.json` and apply from each trader's next restock, without a restart - except `EnableRecipes`, which needs a server restart.
+
+Settings live in `config.json` in the mod folder. If you edit the file by hand instead, restart the server afterwards.
 
 | Setting | Default | Description |
 | --- | --- | --- |
@@ -61,6 +63,7 @@ The ammo presses return at most 1.0x their input at handbook prices, so you spen
 
 ### Writing your own
 Recipes live in `recipes.jsonc`. Items are 24 character ids - the file explains every field. Mistakes are skipped with a warning in the server console rather than stopping the mod.
+- The easiest way is the recipe editor on the **Trader Scarcity** page in SIC. Recipes are grouped by station as in the hideout, and items are found by their English name. Saving writes `recipes.jsonc`; restart the server and the game for the changes to take effect.
 - Keep a recipe's `Id` and the order of its options stable - they decide the in-game recipe ids. Renaming an `Id` loses crafts in progress for that recipe; reordering or removing options changes which output an in-progress craft gives, or loses it if its slot no longer exists. Add new options at the end.
 - `Extras` are used up whichever input is picked, `Tools` are needed but kept, and an output can set its own `Minutes`.
 - `Color` (e.g. `"#2f6fd6"`) gives a recipe its own tile tint in Usable Crafting. The ammo presses and the salvage recipes use it for tiers: Workbench 1 blue, Workbench 2 green, Workbench 3 red.

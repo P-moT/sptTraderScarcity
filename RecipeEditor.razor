@@ -1,0 +1,484 @@
+@* TraderScarcity - Copyright (C) 2026 P_moT
+   SPDX-License-Identifier: GPL-3.0-only *@
+@* The recipes.jsonc editor on the Trader Scarcity SIC page. Recipes are grouped by station, as the hideout shows them. *@
+@using System.Globalization
+@using System.Reflection
+@using System.Text.RegularExpressions
+@using MudBlazor
+@using SPTarkov.Server.Core.Helpers.Server
+@inject ItemCatalog Catalog
+@inject ModHelper ModHelper
+
+<style>
+    .recipe-row { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+    .recipe-title { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; width: 100%; }
+    .recipe-swatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--mud-palette-lines-default); flex: 0 0 auto; }
+    .recipe-sides { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+    .recipe-side { display: flex; flex-direction: column; gap: 8px; }
+    .recipe-option { border: 1px solid var(--mud-palette-lines-default); border-radius: 4px; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+    .recipe-option-head { display: flex; justify-content: space-between; align-items: center; }
+    .recipe-stack { display: flex; gap: 8px; align-items: center; }
+    .recipe-stack-name { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+    .recipe-stack-id { font-size: 11px; opacity: .6; }
+    .recipe-unknown { color: var(--mud-palette-error); }
+</style>
+
+<MudText Typo="Typo.h5">Crafting Recipes</MudText>
+<MudText Typo="Typo.body2">Each recipe is one card in the hideout: the player picks one input and one output. An input can be a bundle of items that are all used up. Search items by their English name, or paste an item id. Saved changes are written to recipes.jsonc and take effect after restarting the server and the game.</MudText>
+
+@if (_loadError != null)
+{
+    <MudAlert Severity="Severity.Error">@_loadError Fix the file and reload this page. Saving is disabled so nothing in it is lost.</MudAlert>
+}
+@if (!AssortScarcity.Config.EnableRecipes)
+{
+    <MudAlert Severity="Severity.Info">Enable recipes is off, so none of these are added to the game.</MudAlert>
+}
+@if (_status != null)
+{
+    <MudAlert Severity="_statusSeverity" ShowCloseIcon="true" CloseIconClicked="() => _status = null">@_status</MudAlert>
+}
+
+<div class="scarcity-row">
+    <MudMenu Label="Add recipe" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Add" Disabled="@(_loadError != null)">
+        @foreach (Station station in Stations)
+        {
+            <MudMenuItem OnClick="() => AddRecipe(station)">@station.Name</MudMenuItem>
+        }
+    </MudMenu>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Disabled="@(!_dirty || HasProblems || _loadError != null)">Save recipes</MudButton>
+    <MudButton Variant="Variant.Text" OnClick="Reload" Disabled="@(!_dirty)">Discard changes</MudButton>
+    @if (_dirty)
+    {
+        <MudText Typo="Typo.body2">Unsaved changes</MudText>
+    }
+    @if (HasProblems)
+    {
+        <MudText Typo="Typo.body2" Color="Color.Error">Fix the recipes marked in red to save</MudText>
+    }
+</div>
+
+<MudPaper Class="pa-4" Outlined="true">
+<MudTabs @bind-ActivePanelIndex="_tab" Elevation="0" Rounded="true" TabPanelsClass="pt-3">
+    @foreach ((string tabName, List<RecipeDraft> inTab) in Tabs)
+    {
+        <MudTabPanel Text="@tabName" BadgeData="@inTab.Count" BadgeColor="Color.Default">
+            <MudExpansionPanels MultiExpansion="true" Elevation="0" Outlined="true">
+                @foreach (RecipeDraft recipe in inTab)
+                {
+                    List<string> problems = Problems(recipe);
+                    <MudExpansionPanel @key="recipe.Key" Expanded="@_expanded.Contains(recipe.Key)" ExpandedChanged="open => Toggle(recipe, open)">
+                        <TitleContent>
+                            <div class="recipe-title">
+                                <span class="recipe-swatch" style="background: @(ValidColor(recipe.Color) ? recipe.Color!.Trim() : NoColorSwatch)" title="@(ValidColor(recipe.Color) ? recipe.Color!.Trim() : "Default tint")"></span>
+                                <MudText Typo="Typo.subtitle1" Style="font-weight: 600">@(string.IsNullOrWhiteSpace(recipe.Id) ? "(no id)" : recipe.Id)</MudText>
+                                <MudChip T="string" Size="Size.Small">Level @recipe.Level</MudChip>
+                                <MudChip T="string" Size="Size.Small">@Minutes(recipe.Minutes)</MudChip>
+                                <MudChip T="string" Size="Size.Small">@recipe.Inputs.Count in → @recipe.Outputs.Count out</MudChip>
+                                @if (problems.Count > 0)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Error" Color="Color.Error" Size="Size.Small" title="@string.Join("\n", problems)" />
+                                }
+                            </div>
+                        </TitleContent>
+                        <ChildContent>
+                            @RecipeBody(recipe, problems)
+                        </ChildContent>
+                    </MudExpansionPanel>
+                }
+            </MudExpansionPanels>
+        </MudTabPanel>
+    }
+</MudTabs>
+</MudPaper>
+
+@code {
+    private RenderFragment RecipeBody(RecipeDraft recipe, List<string> problems) => __builder =>
+    {
+        <div style="display: flex; flex-direction: column; gap: 12px">
+            @if (problems.Count > 0)
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">
+                    @foreach (string problem in problems)
+                    {
+                        <div>@problem</div>
+                    }
+                </MudAlert>
+            }
+            @if (recipe.Inputs.Count * recipe.Outputs.Count > CombinationWarning)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true">@(recipe.Inputs.Count * recipe.Outputs.Count) combinations. That works, but without the client plugin each one is its own card, so consider splitting it.</MudAlert>
+            }
+
+            <div class="recipe-row">
+                <MudTextField T="string" Label="Id" Value="recipe.Id" ValueChanged="v => Change(() => recipe.Id = v ?? string.Empty)" Disabled="recipe.Existing" Immediate="true"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 220px"
+                              HelperText="@(recipe.Existing ? "Fixed: renaming loses crafts in progress" : "Unique, can't be changed once saved")" />
+                <MudSelect T="string" Label="Station" Value="StationOf(recipe.Area)?.Value ?? recipe.Area" ValueChanged="v => ChangeStation(recipe, v)"
+                           Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Style="width: 180px">
+                    @foreach (Station station in Stations)
+                    {
+                        <MudSelectItem T="string" Value="@station.Value">@station.Name</MudSelectItem>
+                    }
+                    @if (StationOf(recipe.Area) == null)
+                    {
+                        <MudSelectItem T="string" Value="@recipe.Area">@recipe.Area</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudNumericField T="int" Label="Level" Value="recipe.Level" ValueChanged="v => Change(() => recipe.Level = v)" Min="1" Max="@(StationOf(recipe.Area)?.MaxLevel ?? 3)"
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 90px" />
+                <MudNumericField T="double" Label="Minutes" Value="recipe.Minutes" ValueChanged="v => Change(() => recipe.Minutes = v)" Min="0.1" Step="5"
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 110px" />
+                <MudTextField T="string" Label="Tile colour" Value="recipe.Color" ValueChanged="v => Change(() => recipe.Color = string.IsNullOrWhiteSpace(v) ? null : v)" Immediate="true"
+                              Placeholder="#3a7bd5" Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 150px" Clearable="true"
+                              HelperText="Usable Crafting tint (optional)" />
+                <MudTextField T="string" Label="Section in file" Value="recipe.Section" ValueChanged="v => Change(() => recipe.Section = v)"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 170px"
+                              HelperText="Heading in recipes.jsonc" />
+            </div>
+            <MudTextField T="string" Label="Note" Value="recipe.Note" ValueChanged="v => Change(() => recipe.Note = v ?? string.Empty)" Lines="2"
+                          Variant="Variant.Outlined" Margin="Margin.Dense" HelperText="Optional. Written as a comment in recipes.jsonc, for anyone editing it by hand." />
+
+            <div class="recipe-sides">
+                <div class="recipe-side">
+                    <MudText Typo="Typo.subtitle2">Tools (needed, kept)</MudText>
+                    @for (int i = 0; i < recipe.Tools.Count; i++)
+                    {
+                        int index = i;
+                        <div class="recipe-stack">
+                            @ItemName(recipe.Tools[index])
+                            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" title="Remove" OnClick="() => Change(() => recipe.Tools.RemoveAt(index))" />
+                        </div>
+                    }
+                    <ItemPicker Placeholder="Add a tool..." OnPicked="id => Change(() => recipe.Tools.Add(id))" />
+                </div>
+                <div class="recipe-side">
+                    <MudText Typo="Typo.subtitle2">Extras (always used up)</MudText>
+                    @foreach (StackDraft stack in recipe.Extras)
+                    {
+                        @StackRow(stack, () => recipe.Extras.Remove(stack))
+                    }
+                    <ItemPicker Placeholder="Add an extra..." OnPicked="id => Change(() => recipe.Extras.Add(new StackDraft { Item = id }))" />
+                </div>
+            </div>
+
+            <div class="recipe-sides">
+                <div class="recipe-side">
+                    <MudText Typo="Typo.subtitle2">Inputs (player picks one)</MudText>
+                    @for (int i = 0; i < recipe.Inputs.Count; i++)
+                    {
+                        List<StackDraft> input = recipe.Inputs[i];
+                        <div class="recipe-option">
+                            <div class="recipe-option-head">
+                                <MudText Typo="Typo.caption">Input @(input.Count > 1 ? " · bundle" : "")</MudText>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" title="Remove this input" OnClick="() => Change(() => recipe.Inputs.Remove(input))" />
+                            </div>
+                            @foreach (StackDraft stack in input)
+                            {
+                                @StackRow(stack, () => input.Remove(stack))
+                            }
+                            <ItemPicker Placeholder="Add to this input (bundle)..." OnPicked="id => Change(() => input.Add(new StackDraft { Item = id }))" />
+                        </div>
+                    }
+                    <ItemPicker Placeholder="New input..." OnPicked="id => Change(() => recipe.Inputs.Add([new StackDraft { Item = id }]))" />
+                </div>
+                <div class="recipe-side">
+                    <MudText Typo="Typo.subtitle2">Outputs (player picks one)</MudText>
+                    @for (int i = 0; i < recipe.Outputs.Count; i++)
+                    {
+                        OutputDraft output = recipe.Outputs[i];
+                        <div class="recipe-option">
+                            <div class="recipe-option-head">
+                                <MudText Typo="Typo.caption">Output @(i + 1)</MudText>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" title="Remove this output" OnClick="() => Change(() => recipe.Outputs.Remove(output))" />
+                            </div>
+                            <div class="recipe-stack">
+                                @ItemName(output.Item)
+                                <MudNumericField T="int" Label="Count" Value="output.Count" ValueChanged="v => Change(() => output.Count = v)" Min="1"
+                                                 Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 90px" />
+                                <MudNumericField T="double?" Label="Minutes" Value="output.Minutes" ValueChanged="v => Change(() => output.Minutes = v)" Min="0.1" Step="5"
+                                                 Placeholder="@Minutes(recipe.Minutes)" Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 110px"
+                                                 title="Craft time for this output. Empty uses the recipe's." />
+                            </div>
+                        </div>
+                    }
+                    <ItemPicker Placeholder="New output..." OnPicked="id => Change(() => recipe.Outputs.Add(new OutputDraft { Item = id }))" />
+                </div>
+            </div>
+
+            @if (recipe.Existing)
+            {
+                <MudText Typo="Typo.caption">Each input and output's in-game recipe is tied to its position. Add new ones at the end: removing one shifts those after it, which changes or loses crafts in progress for them.</MudText>
+            }
+            <div>
+                <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" OnClick="() => DeleteRecipe(recipe)">Delete recipe</MudButton>
+            </div>
+        </div>
+    };
+
+    private RenderFragment StackRow(StackDraft stack, Action remove) => __builder =>
+    {
+        <div class="recipe-stack">
+            @ItemName(stack.Item)
+            <MudNumericField T="int" Label="Count" Value="stack.Count" ValueChanged="v => Change(() => stack.Count = v)" Min="1"
+                             Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 90px" />
+            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" title="Remove" OnClick="() => Change(remove)" />
+        </div>
+    };
+
+    private RenderFragment ItemName(string id) => __builder =>
+    {
+        CatalogItem? item = Catalog.Get(id);
+        <div class="recipe-stack-name">
+            @if (item != null)
+            {
+                <span>@item.Name</span>
+                <span class="recipe-stack-id">@item.Category · @item.Id</span>
+            }
+            else
+            {
+                <span class="recipe-unknown">Unknown item</span>
+                <span class="recipe-stack-id">@id</span>
+            }
+        </div>
+    };
+
+    private sealed record Station(string Value, string Name, int MaxLevel, params string[] Aliases);
+
+    // The stations that craft, as recipes.jsonc names them. Nutrition Unit is "Kitchen" in the game's own data.
+    private static readonly Station[] Stations =
+    {
+        new("Workbench", "Workbench", 3),
+        new("MedStation", "Medstation", 3),
+        new("NutritionUnit", "Nutrition Unit", 3, "Kitchen"),
+        new("IntelligenceCenter", "Intelligence Center", 3),
+        new("Lavatory", "Lavatory", 3),
+        new("BoozeGenerator", "Booze Generator", 1),
+        new("WaterCollector", "Water Collector", 3),
+    };
+
+    private const int CombinationWarning = 64; // Matches MultiRecipes
+    // Swatch for a recipe with no Color of its own. Only the page uses it - in game it gets the client's default tint.
+    private const string NoColorSwatch = "#d3d3d3";
+    private static readonly Regex ColorPattern = new("^#?([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$");
+
+    private string _header = "";
+    private List<RecipeDraft> _recipes = new();
+    private readonly HashSet<int> _expanded = new();
+    private int _tab;
+    private bool _dirty;
+    private string? _loadError;
+    private string? _status;
+    private Severity _statusSeverity = Severity.Success;
+
+    private string ModFolder => ModHelper.GetAbsolutePathToModFolder(Assembly.GetExecutingAssembly());
+
+    private bool HasProblems => _recipes.Any(recipe => Problems(recipe).Count > 0);
+
+    // One tab per station with recipes, in the stations' usual order, then any station this page doesn't know.
+    // Within a tab, by level, then in file order.
+    private List<(string Name, List<RecipeDraft> Recipes)> Tabs
+    {
+        get
+        {
+            var tabs = Stations
+                .Select(station => (station.Name, _recipes.Where(recipe => StationOf(recipe.Area) == station).OrderBy(recipe => recipe.Level).ToList()))
+                .Where(tab => tab.Item2.Count > 0)
+                .ToList();
+            tabs.AddRange(_recipes.Where(recipe => StationOf(recipe.Area) == null)
+                .GroupBy(recipe => recipe.Area)
+                .Select(group => ($"{group.Key} (unknown)", group.OrderBy(recipe => recipe.Level).ToList())));
+            return tabs;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        Reload();
+    }
+
+    private void Reload()
+    {
+        try
+        {
+            RecipeFileContents contents = RecipeFile.Load(ModFolder);
+            _header = contents.Header;
+            _recipes = contents.Recipes;
+            _loadError = null;
+        }
+        catch (Exception ex)
+        {
+            _header = "";
+            _recipes = new();
+            _loadError = $"Could not read {RecipeFile.PathIn(ModFolder)}: {ex.Message}";
+        }
+        _expanded.Clear();
+        _dirty = false;
+        _status = null;
+        _tab = Math.Min(_tab, Math.Max(Tabs.Count - 1, 0));
+    }
+
+    private static Station? StationOf(string? area)
+    {
+        string key = (area ?? "").Replace(" ", "");
+        return Stations.FirstOrDefault(station => string.Equals(station.Value, key, StringComparison.OrdinalIgnoreCase)
+            || station.Aliases.Any(alias => string.Equals(alias, key, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private void Change(Action change)
+    {
+        change();
+        _dirty = true;
+    }
+
+    private void Toggle(RecipeDraft recipe, bool open)
+    {
+        if (open)
+        {
+            _expanded.Add(recipe.Key);
+        }
+        else
+        {
+            _expanded.Remove(recipe.Key);
+        }
+    }
+
+    private void ChangeStation(RecipeDraft recipe, string area)
+    {
+        Change(() =>
+        {
+            recipe.Area = area;
+            recipe.Level = Math.Min(recipe.Level, StationOf(area)?.MaxLevel ?? 3);
+        });
+        ShowTabOf(recipe);
+    }
+
+    private void AddRecipe(Station station)
+    {
+        // Lands under the heading of the station's last recipe, so it sits with its neighbours in the file
+        string section = _recipes.LastOrDefault(recipe => StationOf(recipe.Area) == station)?.Section ?? station.Name;
+        int number = 1;
+        while (_recipes.Any(recipe => string.Equals(recipe.Id, $"new-recipe-{number}", StringComparison.OrdinalIgnoreCase)))
+        {
+            number++;
+        }
+        var recipe = new RecipeDraft { Id = $"new-recipe-{number}", Area = station.Value, Section = section, Minutes = 60 };
+        Change(() => _recipes.Add(recipe));
+        _expanded.Add(recipe.Key);
+        ShowTabOf(recipe);
+    }
+
+    private void DeleteRecipe(RecipeDraft recipe)
+    {
+        Change(() => _recipes.Remove(recipe));
+        _expanded.Remove(recipe.Key);
+        _tab = Math.Min(_tab, Math.Max(Tabs.Count - 1, 0));
+    }
+
+    private void ShowTabOf(RecipeDraft recipe)
+    {
+        int index = Tabs.FindIndex(tab => tab.Recipes.Contains(recipe));
+        if (index >= 0)
+        {
+            _tab = index;
+        }
+    }
+
+    // Everything MultiRecipes would skip or reject, so a saved file loads exactly as shown
+    private List<string> Problems(RecipeDraft recipe)
+    {
+        var problems = new List<string>();
+        if (string.IsNullOrWhiteSpace(recipe.Id))
+        {
+            problems.Add("Needs an id.");
+        }
+        else if (_recipes.Count(other => string.Equals(other.Id.Trim(), recipe.Id.Trim(), StringComparison.OrdinalIgnoreCase)) > 1)
+        {
+            problems.Add($"Another recipe already uses the id \"{recipe.Id}\".");
+        }
+        if (StationOf(recipe.Area) == null)
+        {
+            problems.Add($"\"{recipe.Area}\" isn't a station this page knows. Pick one.");
+        }
+        if (recipe.Level < 1)
+        {
+            problems.Add("Level must be at least 1.");
+        }
+        if (recipe.Minutes <= 0)
+        {
+            problems.Add("Minutes must be more than 0.");
+        }
+        if (recipe.Color != null && !ValidColor(recipe.Color))
+        {
+            problems.Add("Tile colour should look like #3a7bd5, or #3a7bd5aa with opacity.");
+        }
+        if (recipe.Inputs.Count == 0)
+        {
+            problems.Add("Needs at least one input.");
+        }
+        if (recipe.Outputs.Count == 0)
+        {
+            problems.Add("Needs at least one output.");
+        }
+        for (int i = 0; i < recipe.Inputs.Count; i++)
+        {
+            if (recipe.Inputs[i].Count == 0)
+            {
+                problems.Add($"Input {i + 1} has no items.");
+            }
+        }
+
+        IEnumerable<(string Where, StackDraft Stack)> stacks = recipe.Extras.Select(stack => ("Extras", stack))
+            .Concat(recipe.Inputs.SelectMany((input, i) => input.Select(stack => ($"Input {i + 1}", stack))))
+            .Concat(recipe.Outputs.Select((output, i) => ($"Output {i + 1}", (StackDraft)output)));
+        foreach ((string where, StackDraft stack) in stacks)
+        {
+            if (Catalog.Get(stack.Item) == null)
+            {
+                problems.Add($"{where}: unknown item {stack.Item}.");
+            }
+            if (stack.Count < 1)
+            {
+                problems.Add($"{where}: count must be at least 1.");
+            }
+        }
+        foreach (string tool in recipe.Tools.Where(tool => Catalog.Get(tool) == null))
+        {
+            problems.Add($"Tools: unknown item {tool}.");
+        }
+        foreach ((OutputDraft output, int i) in recipe.Outputs.Select((output, i) => (output, i)).Where(pair => pair.output.Minutes is <= 0))
+        {
+            problems.Add($"Output {i + 1}: minutes must be more than 0, or empty to use the recipe's.");
+        }
+        return problems;
+    }
+
+    // Untrimmed while typing - trimming as you type moves the cursor - so spaces are ignored here and dropped on save
+    private static bool ValidColor(string? color) => color != null && ColorPattern.IsMatch(color.Trim()) && color.Trim().StartsWith('#');
+
+    private static string Minutes(double minutes) => minutes.ToString("0.#", CultureInfo.InvariantCulture) + " min";
+
+    private void Save()
+    {
+        try
+        {
+            foreach (RecipeDraft recipe in _recipes)
+            {
+                recipe.Id = recipe.Id.Trim();
+                recipe.Color = string.IsNullOrWhiteSpace(recipe.Color) ? null : recipe.Color.Trim();
+                recipe.Area = StationOf(recipe.Area)?.Value ?? recipe.Area;
+            }
+            RecipeFile.Save(ModFolder, _header, _recipes, Catalog.NameOf);
+            // Saved ids are now what crafts in progress will be tied to
+            _recipes.ForEach(recipe => recipe.Existing = true);
+            _dirty = false;
+            _statusSeverity = Severity.Success;
+            _status = "Saved. Restart the server and the game for the recipe changes to take effect.";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _statusSeverity = Severity.Error;
+            _status = $"Could not save: {ex.Message}";
+        }
+    }
+}

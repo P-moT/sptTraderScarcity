@@ -14,16 +14,17 @@ using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Spt.Mod;
 using SPTarkov.Server.Core.Models.Spt.Tables;
 using SPTarkov.Server.Core.Services.Commerce;
+using SPTarkov.Server.Web;
 
 namespace TraderScarcity;
 
-public record ModMetadata : IModMetadata
+public record ModMetadata : IModMetadata, IModBlazorMetadata
 {
     public string ModGuid { get; init; } = "com.pmot.traderscarcity";
     public string Name { get; init; } = "TraderScarcity";
     public string Author { get; init; } = "P_moT";
     public List<string>? Contributors { get; init; }
-    public SemanticVersioning.Version Version { get; init; } = new("0.2.0");
+    public SemanticVersioning.Version Version { get; init; } = new("0.3.1");
     public SemanticVersioning.Range SptVersion { get; init; } = new("4.1.6");
 
 
@@ -32,6 +33,9 @@ public record ModMetadata : IModMetadata
     public string? Url { get; init; }
     public string License { get; init; } = "GPL-3.0-only";
     public bool HasPrepatcher { get; init; } = false;
+    public string? WWWRootUrl { get; init; }
+    public string? HomePage { get; init; } = "/traderscarcity";
+    public string? HomePageDescription { get; init; } = "Tune trader stock scarcity and edit the multi-option crafting recipes.";
 }
 
 // Runs after trader registration so traders added by other mods are rolled too
@@ -61,17 +65,15 @@ public class TraderScarcityLoader(
             AssortScarcity.Apply(trader, templateTable.Items, logger, itemHelper);
         }
 
-        if (AssortScarcity.Config.IncludeFence)
-        {
-            FencePatches.Logger = logger;
-            FencePatches.TemplateTable = templateTable;
+        // Enabled even with IncludeFence off, so it can be turned on from the SIC page without a restart - ApplyFence does nothing while it's off
+        FencePatches.Logger = logger;
+        FencePatches.TemplateTable = templateTable;
 
-            new GenerateFenceAssortsPatch().Enable();
-            new PerformPartialRefreshPatch().Enable();
+        new GenerateFenceAssortsPatch().Enable();
+        new PerformPartialRefreshPatch().Enable();
 
-            // In case Fence's stock was already generated before this ran - offers are only ever rolled once, so this can't double up
-            FencePatches.Roll(fenceService);
-        }
+        // In case Fence's stock was already generated before this ran - offers are only ever rolled once, so this can't double up
+        FencePatches.Roll(fenceService);
 
         logger.Success("[TraderScarcity] Loaded");
 
@@ -139,7 +141,7 @@ public class ResetExpiredTraderPatch : AbstractPatch
 }
 
 // Fence's stock lives in FenceService's cache, built by GenerateFenceAssorts and topped up by PerformPartialRefresh.
-// Both patches only run when IncludeFence is on.
+// Both patches are always enabled, and do nothing while IncludeFence is off.
 internal static class FencePatches
 {
     internal static ISptLogger<TraderScarcityLoader> Logger = null!;

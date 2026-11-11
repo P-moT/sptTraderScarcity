@@ -1,0 +1,46 @@
+@* TraderScarcity - Copyright (C) 2026 P_moT
+   SPDX-License-Identifier: GPL-3.0-only *@
+@* Search box for one item by English name (or pasted id). Picking one hands its template id to OnPicked. *@
+@using MudBlazor
+@inject ItemCatalog Catalog
+
+@* Replaced with a fresh box after every pick rather than cleared in place: clearing from inside MudAutocomplete's own
+   selection handling left it holding focus and half-reset, and refocusing the browser window then made the cursor
+   jump between fields. A new box has no state, and nothing is left focused. *@
+<MudAutocomplete @key="_generation" T="CatalogItem" ValueChanged="Picked" SearchFunc="Search"
+                 ToStringFunc="@(item => item?.Name)" Placeholder="@Placeholder" Variant="Variant.Outlined" Margin="Margin.Dense"
+                 Dense="true" MaxItems="50" MinCharacters="2" DebounceInterval="150" SelectOnActivation="false"
+                 AdornmentIcon="@Icons.Material.Filled.Search" Style="@Style">
+    <ItemTemplate Context="item">
+        <div style="display: flex; flex-direction: column; line-height: 1.2">
+            <span>@item.Name</span>
+            <span style="font-size: 11px; opacity: .7">@item.ShortName · @item.Category · @item.Id</span>
+        </div>
+    </ItemTemplate>
+    <NoItemsTemplate>
+        <MudText Typo="Typo.body2" Class="pa-2">No items match.</MudText>
+    </NoItemsTemplate>
+</MudAutocomplete>
+
+@code {
+    [Parameter] public EventCallback<string> OnPicked { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Search items...";
+    [Parameter] public string? Style { get; set; }
+
+    private int _generation;
+
+    private Task<IEnumerable<CatalogItem>> Search(string text, CancellationToken token)
+    {
+        return Task.FromResult<IEnumerable<CatalogItem>>(Catalog.Search(text));
+    }
+
+    private async Task Picked(CatalogItem? item)
+    {
+        if (item == null)
+        {
+            return;
+        }
+        await OnPicked.InvokeAsync(item.Id);
+        _generation++;
+    }
+}
