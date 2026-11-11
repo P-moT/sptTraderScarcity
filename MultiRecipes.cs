@@ -183,11 +183,18 @@ public static class MultiRecipes
         return false;
     }
 
+    // Area names as the game has them, plus the names players know two stations by
     private static bool TryParseArea(string? value, out HideoutAreas area)
     {
-        if (string.Equals(value?.Replace(" ", ""), "NutritionUnit", StringComparison.OrdinalIgnoreCase))
+        string? key = value?.Replace(" ", "");
+        if (string.Equals(key, "NutritionUnit", StringComparison.OrdinalIgnoreCase))
         {
             area = HideoutAreas.Kitchen;
+            return true;
+        }
+        if (string.Equals(key, "Lavatory", StringComparison.OrdinalIgnoreCase))
+        {
+            area = HideoutAreas.WaterCloset;
             return true;
         }
         return Enum.TryParse(value?.Replace(" ", ""), true, out area) && area != HideoutAreas.NotSet;

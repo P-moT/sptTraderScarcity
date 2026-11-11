@@ -24,7 +24,7 @@ public record ModMetadata : IModMetadata, IModBlazorMetadata
     public string Name { get; init; } = "TraderScarcity";
     public string Author { get; init; } = "P_moT";
     public List<string>? Contributors { get; init; }
-    public SemanticVersioning.Version Version { get; init; } = new("0.3.1");
+    public SemanticVersioning.Version Version { get; init; } = new("0.3.2");
     public SemanticVersioning.Range SptVersion { get; init; } = new("4.1.6");
 
 

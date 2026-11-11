@@ -245,14 +245,15 @@
 
     private sealed record Station(string Value, string Name, int MaxLevel, params string[] Aliases);
 
-    // The stations that craft, as recipes.jsonc names them. Nutrition Unit is "Kitchen" in the game's own data.
+    // The stations that craft, as recipes.jsonc names them - the game's own area names, except Nutrition Unit, which
+    // the game calls Kitchen. The Lavatory is WaterCloset to the game; "Lavatory" is read too, but saved as WaterCloset.
     private static readonly Station[] Stations =
     {
         new("Workbench", "Workbench", 3),
         new("MedStation", "Medstation", 3),
         new("NutritionUnit", "Nutrition Unit", 3, "Kitchen"),
         new("IntelligenceCenter", "Intelligence Center", 3),
-        new("Lavatory", "Lavatory", 3),
+        new("WaterCloset", "Lavatory", 3, "Lavatory"),
         new("BoozeGenerator", "Booze Generator", 1),
         new("WaterCollector", "Water Collector", 3),
     };

@@ -4,7 +4,7 @@
 //   Id       - unique, stable name. Each option's in-game recipe is tied to its Id and its position in AnyOf/OneOf.
 //              Renaming an Id loses crafts in progress for that recipe. Reordering or removing options changes which
 //              output an in-progress craft gives - or loses it, if its slot no longer exists. Add new options at the END.
-//   Area     - Workbench, MedStation, NutritionUnit (Kitchen), IntelligenceCenter, ... or the area number
+//   Area     - Workbench, MedStation, NutritionUnit (Kitchen), Lavatory (WaterCloset), IntelligenceCenter, ... or the area number
 //   Level    - area level required
 //   Minutes  - craft time. An output can override it with its own "Minutes".
 //   Color    - optional tile colour for the client plugin with Usable Crafting, e.g. "#3a7bd5" (add 2 more digits for opacity)
