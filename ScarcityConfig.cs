@@ -23,14 +23,34 @@ public class StockRule
 // Mirrors config.json. Defaults here are used for anything missing from the file, or for everything if the file can't be read.
 public class ScarcityConfig
 {
+    // Master switch for trader stock rolls. Off = traders go back to full stock at their next restock.
+    public bool EnableScarcity { get; set; } = true;
+
     // Print a summary to the server console on every roll (startup + each restock).
     public bool LogRolls { get; set; } = false;
 
     // Also roll stock for traders added by other mods. Off = only base game traders are affected.
     public bool IncludeModdedTraders { get; set; } = true;
 
-    // Also roll stock for Fence. Off by default - his rotating stock is already random, whatever he has he has.
-    public bool IncludeFence { get; set; } = false;
+    // Which base game traders are rolled, by name. Fence is off by default - his rotating stock is already random, whatever he has he has.
+    // Lightkeeper and Ref are never rolled. A trader missing from the file gets its default.
+    public Dictionary<string, bool> Traders { get; set; } = DefaultTraders();
+
+    // Item template ids that are never rolled, at any trader - they keep the trader's normal stock.
+    public List<string> ExcludedItems { get; set; } = [];
+
+    // Read from config files written before 0.3.3, when Fence had his own switch. Never written back.
+    public bool? IncludeFence { get; set; }
+
+    // The base game traders this mod can roll, in the order they're shown and written
+    public static readonly string[] TraderNames = ["Prapor", "Therapist", "Skier", "Peacekeeper", "Mechanic", "Ragman", "Jaeger", "Fence"];
+
+    public static bool DefaultFor(string trader) => trader != "Fence";
+
+    private static Dictionary<string, bool> DefaultTraders() =>
+        TraderNames.ToDictionary(name => name, DefaultFor, StringComparer.OrdinalIgnoreCase);
+
+    public bool IsTraderEnabled(string trader) => Traders.TryGetValue(trader, out bool on) ? on : DefaultFor(trader);
 
     // Add the multi-option crafting recipes from recipes.jsonc.
     public bool EnableRecipes { get; set; } = true;
@@ -91,6 +111,8 @@ public class ScarcityConfig
     public ScarcityConfig Clone()
     {
         var copy = (ScarcityConfig)MemberwiseClone();
+        copy.Traders = new Dictionary<string, bool>(Traders, StringComparer.OrdinalIgnoreCase);
+        copy.ExcludedItems = [.. ExcludedItems];
         copy.Ammo = Ammo.Clone();
         copy.AmmoBox = AmmoBox.Clone();
         copy.Gear = Gear.Clone();
@@ -99,7 +121,8 @@ public class ScarcityConfig
     }
 
     // Written by the SIC page. Writes config.json and swaps the live settings, so trader stock follows from each trader's next restock.
-    public static void Save(string modFolder, ScarcityConfig config)
+    // nameOf labels each excluded item with a comment, so the file can still be read by hand
+    public static void Save(string modFolder, ScarcityConfig config, Func<string, string>? nameOf = null)
     {
         lock (SaveLock)
         {
@@ -111,7 +134,7 @@ public class ScarcityConfig
             // Written to one side first, so a failure part way through can't leave a damaged config.json
             string path = Path.Combine(modFolder, "config.json");
             string temp = path + ".tmp";
-            File.WriteAllText(temp, config.ToJson());
+            File.WriteAllText(temp, config.ToJson(nameOf));
             File.Move(temp, path, overwrite: true);
 
             _loaded = config.Clone();
@@ -120,7 +143,7 @@ public class ScarcityConfig
     }
 
     // Same layout as the shipped file, one line per category, so it stays easy to edit by hand
-    private string ToJson()
+    private string ToJson(Func<string, string>? nameOf)
     {
         static string B(bool value) => value ? "true" : "false";
         static string D(double value) => value.ToString("0.####", CultureInfo.InvariantCulture);
@@ -129,9 +152,11 @@ public class ScarcityConfig
 
         return string.Join("\n",
             "{",
+            $"    \"EnableScarcity\": {B(EnableScarcity)},",
             $"    \"LogRolls\": {B(LogRolls)},",
             $"    \"IncludeModdedTraders\": {B(IncludeModdedTraders)},",
-            $"    \"IncludeFence\": {B(IncludeFence)},",
+            $"    \"Traders\": {{ {string.Join(", ", TraderNames.Select(name => $"\"{name}\": {B(IsTraderEnabled(name))}"))} }},",
+            ExcludedJson(nameOf),
             $"    \"EnableRecipes\": {B(EnableRecipes)},",
             $"    \"LoyaltyBumpChance\": {D(LoyaltyBumpChance)},",
             $"    {R(nameof(Ammo), Ammo)},",
@@ -141,9 +166,47 @@ public class ScarcityConfig
             "}") + "\n";
     }
 
+    private string ExcludedJson(Func<string, string>? nameOf)
+    {
+        if (ExcludedItems.Count == 0)
+        {
+            return "    \"ExcludedItems\": [],";
+        }
+        var lines = new List<string> { "    \"ExcludedItems\": [" };
+        for (int i = 0; i < ExcludedItems.Count; i++)
+        {
+            string entry = $"        \"{ExcludedItems[i]}\"{(i < ExcludedItems.Count - 1 ? "," : "")}";
+            string? name = nameOf?.Invoke(ExcludedItems[i]);
+            lines.Add(string.IsNullOrEmpty(name) ? entry : $"{entry.PadRight(36)} // {name}");
+        }
+        lines.Add("    ],");
+        return string.Join("\n", lines);
+    }
+
     // Out of range values are clamped rather than rejected, so one typo doesn't turn the whole mod off.
     private void Validate<T>(ISptLogger<T> logger)
     {
+        var traders = DefaultTraders();
+        foreach (var (name, on) in Traders ?? [])
+        {
+            if (traders.ContainsKey(name))
+            {
+                traders[name] = on;
+            }
+            else
+            {
+                logger.Warning($"[TraderScarcity] Traders: unknown trader \"{name}\", ignored. Known: {string.Join(", ", TraderNames)}");
+            }
+        }
+        // Older config files had a separate switch for Fence - it still counts when Traders doesn't mention him
+        if (IncludeFence is bool includeFence && Traders?.Keys.Any(name => name.Equals("Fence", StringComparison.OrdinalIgnoreCase)) != true)
+        {
+            traders["Fence"] = includeFence;
+        }
+        Traders = traders;
+        IncludeFence = null;
+        ExcludedItems = (ExcludedItems ?? []).Where(id => !string.IsNullOrWhiteSpace(id)).Select(id => id.Trim()).Distinct().ToList();
+
         LoyaltyBumpChance = ClampChance(LoyaltyBumpChance, nameof(LoyaltyBumpChance), logger);
         Ammo = ValidateRule(Ammo, nameof(Ammo), new ScarcityConfig().Ammo, logger);
         AmmoBox = ValidateRule(AmmoBox, nameof(AmmoBox), new ScarcityConfig().AmmoBox, logger);

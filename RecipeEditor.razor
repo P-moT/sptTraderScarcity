@@ -10,6 +10,7 @@
 @inject ModHelper ModHelper
 
 <style>
+    .recipe-header { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
     .recipe-row { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
     .recipe-title { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; width: 100%; }
     .recipe-swatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--mud-palette-lines-default); flex: 0 0 auto; }
@@ -23,16 +24,23 @@
     .recipe-unknown { color: var(--mud-palette-error); }
 </style>
 
-<MudText Typo="Typo.h5">Crafting Recipes</MudText>
+<div class="recipe-header">
+    <MudText Typo="Typo.h5">Crafting Recipes</MudText>
+    @HeaderActions
+</div>
 <MudText Typo="Typo.body2">Each recipe is one card in the hideout: the player picks one input and one output. An input can be a bundle of items that are all used up. Search items by their English name, or paste an item id. Saved changes are written to recipes.jsonc and take effect after restarting the server and the game.</MudText>
 
 @if (_loadError != null)
 {
     <MudAlert Severity="Severity.Error">@_loadError Fix the file and reload this page. Saving is disabled so nothing in it is lost.</MudAlert>
 }
-@if (!AssortScarcity.Config.EnableRecipes)
+@if (ScarcityConfig.AtStartup is { } startup && AssortScarcity.Config.EnableRecipes != startup.EnableRecipes)
 {
-    <MudAlert Severity="Severity.Info">Enable recipes is off, so none of these are added to the game.</MudAlert>
+    <MudAlert Severity="Severity.Info">Recipes are only added when the server starts. Restart the server (and the game) for turning them @(AssortScarcity.Config.EnableRecipes ? "on" : "off") to take effect.</MudAlert>
+}
+else if (!AssortScarcity.Config.EnableRecipes)
+{
+    <MudAlert Severity="Severity.Info">Recipes are off, so none of these are added to the game.</MudAlert>
 }
 @if (_status != null)
 {
@@ -93,6 +101,9 @@
 </MudPaper>
 
 @code {
+    // Shown beside the title - the page puts the recipes master switch here, since it lives in config.json
+    [Parameter] public RenderFragment? HeaderActions { get; set; }
+
     private RenderFragment RecipeBody(RecipeDraft recipe, List<string> problems) => __builder =>
     {
         <div style="display: flex; flex-direction: column; gap: 12px">

@@ -10,6 +10,7 @@
 @attribute [Authorize(Policy = "Administrator")]
 @layout BaseMudBlazorLayout
 @inject ModHelper ModHelper
+@inject ItemCatalog Catalog
 
 <PageTitle>Trader Scarcity</PageTitle>
 
@@ -18,15 +19,32 @@
     .scarcity-columns { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
     .scarcity-settings { flex: 0 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
     .scarcity-recipes { flex: 1 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+    .scarcity-header { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
     .scarcity-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .scarcity-section { display: flex; flex-direction: column; gap: 4px; }
     .scarcity-table td { vertical-align: top; }
+    .scarcity-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 8px; }
+    .scarcity-panel { border: 1px solid var(--mud-palette-lines-default); border-radius: 4px; padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    /* Takes the height of the traders panel beside it instead of growing; the item list scrolls. Stacked on a narrow page it gets a fixed height. */
+    .scarcity-panel-fill { position: relative; min-height: 280px; min-width: 0; }
+    .scarcity-panel-fill > .scarcity-panel { position: absolute; inset: 0; }
+    /* MudBlazor's input control grows to fill a flex column - kept to its own height so the space goes to the list */
+    .scarcity-panel-fill .scarcity-panel > * { flex: 0 0 auto; }
+    .scarcity-panel-fill .scarcity-panel > .scarcity-excluded-list { flex: 1 1 0; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 4px; }
+    .scarcity-excluded { display: flex; gap: 8px; align-items: center; }
+    .scarcity-excluded-name { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+    .scarcity-excluded-id { font-size: 11px; opacity: .6; }
+    .scarcity-unknown { color: var(--mud-palette-error); }
 </style>
 
 <div class="scarcity-page">
     <div class="scarcity-columns">
     <div class="scarcity-settings">
-    <MudText Typo="Typo.h5">Trader Scarcity</MudText>
+    <div class="scarcity-header">
+        <MudText Typo="Typo.h5">Trader Scarcity</MudText>
+        <MudSwitch T="bool" Value="AssortScarcity.Config.EnableScarcity" ValueChanged="v => SaveMaster(config => config.EnableScarcity = v)" Color="Color.Primary"
+                   Disabled="@(ScarcityConfig.LoadError != null)" Label="@(AssortScarcity.Config.EnableScarcity ? "Enabled" : "Disabled")" />
+    </div>
     <MudText Typo="Typo.body2">Every restock, each trader offer rolls whether it is in stock at all, and if so, how many. Saved changes are written to config.json and apply from each trader's next restock, without restarting the server.</MudText>
 
     @if (ScarcityConfig.LoadError != null)
@@ -37,20 +55,71 @@
     {
         <MudAlert Severity="_statusSeverity" ShowCloseIcon="true" CloseIconClicked="() => _status = null">@_status</MudAlert>
     }
-    @if (RecipesNeedRestart)
+    @if (!AssortScarcity.Config.EnableScarcity)
     {
-        <MudAlert Severity="Severity.Info">Crafting recipes are only added when the server starts. Restart the server (and the game) for the change to Enable recipes to take effect.</MudAlert>
+        <MudAlert Severity="Severity.Info">Trader scarcity is off. Each trader goes back to full stock at its next restock. The settings below are kept for when it is turned back on.</MudAlert>
     }
+
+    <div class="scarcity-row">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Disabled="@(!_dirty || !IsValid || ScarcityConfig.LoadError != null)">Save settings</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="Revert" Disabled="@(!_dirty)">Discard changes</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="ResetToDefaults">Reset to defaults</MudButton>
+        @if (_dirty)
+        {
+            <MudText Typo="Typo.body2">Unsaved changes</MudText>
+        }
+    </div>
 
     <MudPaper Class="pa-4" Outlined="true">
         <div class="scarcity-section">
             <MudText Typo="Typo.h6">Traders</MudText>
             <MudSwitch T="bool" Value="_config.IncludeModdedTraders" ValueChanged="v => Set(() => _config.IncludeModdedTraders = v)" Color="Color.Primary"
                        Label="Include modded traders" />
-            <MudText Typo="Typo.caption">Also roll stock for traders added by other mods. Off, only the base game traders are affected; a modded trader goes back to full stock at its next restock.</MudText>
-            <MudSwitch T="bool" Value="_config.IncludeFence" ValueChanged="v => Set(() => _config.IncludeFence = v)" Color="Color.Primary"
-                       Label="Include Fence" />
-            <MudText Typo="Typo.caption">Also roll Fence's stock. Each of his offers is rolled once, when it first appears in his rotation.</MudText>
+            <MudText Typo="Typo.caption">Also roll stock for traders added by other mods. Off, a modded trader goes back to full stock at its next restock.</MudText>
+            <div class="scarcity-panels">
+                <div class="scarcity-panel">
+                    <MudText Typo="Typo.subtitle2">Base game traders</MudText>
+                    <MudText Typo="Typo.caption">Unticked traders keep their normal stock. <br />Lightkeeper and Ref are never affected.</MudText>
+                    @foreach (string trader in ScarcityConfig.TraderNames)
+                    {
+                        <MudCheckBox T="bool" Value="_config.IsTraderEnabled(trader)" ValueChanged="v => Set(() => _config.Traders[trader] = v)" Color="Color.Primary"
+                                     Dense="true" Label="@trader" />
+                    }
+                </div>
+                <div class="scarcity-panel-fill">
+                <div class="scarcity-panel">
+                    <MudText Typo="Typo.subtitle2">Never scarce</MudText>
+                    <MudText Typo="Typo.caption">Items here are never rolled, at any trader. They keep each trader's normal stock.</MudText>
+                    <div class="scarcity-picker"><ItemPicker Placeholder="Add an item..." OnPicked="Exclude" /></div>
+                    <div class="scarcity-excluded-list">
+                    @if (_config.ExcludedItems.Count == 0)
+                    {
+                        <MudText Typo="Typo.body2" Class="mt-1" Style="opacity: .7">No items excluded.</MudText>
+                    }
+                    @foreach (string id in _config.ExcludedItems.ToList())
+                    {
+                        CatalogItem? item = Catalog.Get(id);
+                        <div class="scarcity-excluded">
+                            <div class="scarcity-excluded-name">
+                                @if (item != null)
+                                {
+                                    <MudText Typo="Typo.body2">@item.Name</MudText>
+                                    <span class="scarcity-excluded-id">@item.Category · @id</span>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.body2" Class="scarcity-unknown">Unknown item</MudText>
+                                    <span class="scarcity-excluded-id">@id</span>
+                                }
+                            </div>
+                            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" aria-label="Remove"
+                                           OnClick="() => Set(() => _config.ExcludedItems.Remove(id))" />
+                        </div>
+                    }
+                    </div>
+                </div>
+                </div>
+            </div>
         </div>
     </MudPaper>
 
@@ -106,35 +175,21 @@
 
     <MudPaper Class="pa-4" Outlined="true">
         <div class="scarcity-section">
-            <MudText Typo="Typo.h6">Crafting</MudText>
-            <MudSwitch T="bool" Value="_config.EnableRecipes" ValueChanged="v => Set(() => _config.EnableRecipes = v)" Color="Color.Primary"
-                       Label="Enable recipes" />
-            <MudText Typo="Typo.caption">Add the multi-option crafting recipes from recipes.jsonc. Takes effect after a server restart.</MudText>
-        </div>
-    </MudPaper>
-
-    <MudPaper Class="pa-4" Outlined="true">
-        <div class="scarcity-section">
             <MudText Typo="Typo.h6">Logging</MudText>
             <MudSwitch T="bool" Value="_config.LogRolls" ValueChanged="v => Set(() => _config.LogRolls = v)" Color="Color.Primary"
                        Label="Log rolls" />
             <MudText Typo="Typo.caption">Print a summary to the server console on every stock roll, including each loyalty boon.</MudText>
         </div>
     </MudPaper>
-
-    <div class="scarcity-row">
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Disabled="@(!_dirty || !IsValid || ScarcityConfig.LoadError != null)">Save settings</MudButton>
-        <MudButton Variant="Variant.Text" OnClick="Revert" Disabled="@(!_dirty)">Discard changes</MudButton>
-        <MudButton Variant="Variant.Text" OnClick="ResetToDefaults">Reset to defaults</MudButton>
-        @if (_dirty)
-        {
-            <MudText Typo="Typo.body2">Unsaved changes</MudText>
-        }
-    </div>
     </div>
 
     <div class="scarcity-recipes">
-        <RecipeEditor />
+        <RecipeEditor>
+            <HeaderActions>
+                <MudSwitch T="bool" Value="AssortScarcity.Config.EnableRecipes" ValueChanged="v => SaveMaster(config => config.EnableRecipes = v)" Color="Color.Primary"
+                           Disabled="@(ScarcityConfig.LoadError != null)" Label="@(AssortScarcity.Config.EnableRecipes ? "Enabled" : "Disabled")" />
+            </HeaderActions>
+        </RecipeEditor>
     </div>
     </div>
 </div>
@@ -159,12 +214,17 @@
         && Categories.Select(category => category.Get(_config))
             .All(rule => rule.InStockChance is >= 0 and <= 1 && rule.Min >= 1 && rule.Max >= rule.Min);
 
-    // Recipes are added once at startup, so a saved change to EnableRecipes waits for a restart
-    private bool RecipesNeedRestart => ScarcityConfig.AtStartup is { } startup && AssortScarcity.Config.EnableRecipes != startup.EnableRecipes;
-
     protected override void OnInitialized()
     {
         _config = AssortScarcity.Config.Clone();
+    }
+
+    private void Exclude(string id)
+    {
+        if (!_config.ExcludedItems.Contains(id, StringComparer.OrdinalIgnoreCase))
+        {
+            Set(() => _config.ExcludedItems.Add(id));
+        }
     }
 
     private void Set(Action change)
@@ -181,10 +241,28 @@
     {
         try
         {
-            ScarcityConfig.Save(ModFolder, _config);
+            ScarcityConfig.Save(ModFolder, _config, Catalog.NameOf);
             _dirty = false;
             _statusSeverity = Severity.Success;
             _status = "Saved. Trader stock follows these settings from each trader's next restock.";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            _statusSeverity = Severity.Error;
+            _status = $"Could not save: {ex.Message}";
+        }
+    }
+
+    // The master switches save straight away. Only that one value is written, on top of the live settings,
+    // so unsaved edits in the form are neither saved nor lost.
+    private void SaveMaster(Action<ScarcityConfig> change)
+    {
+        ScarcityConfig live = AssortScarcity.Config.Clone();
+        change(live);
+        try
+        {
+            ScarcityConfig.Save(ModFolder, live, Catalog.NameOf);
+            change(_config);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
@@ -203,7 +281,12 @@
     // Only fills the form - nothing is written until Save
     private void ResetToDefaults()
     {
-        _config = new ScarcityConfig();
+        // The master switches are left as they are - they save on their own
+        _config = new ScarcityConfig
+        {
+            EnableScarcity = AssortScarcity.Config.EnableScarcity,
+            EnableRecipes = AssortScarcity.Config.EnableRecipes,
+        };
         _dirty = true;
         _status = null;
     }

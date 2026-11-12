@@ -1,7 +1,9 @@
 {
+    "EnableScarcity": true,
     "LogRolls": false,
     "IncludeModdedTraders": true,
-    "IncludeFence": false,
+    "Traders": { "Prapor": true, "Therapist": true, "Skier": true, "Peacekeeper": true, "Mechanic": true, "Ragman": true, "Jaeger": true, "Fence": false },
+    "ExcludedItems": [],
     "EnableRecipes": true,
     "LoyaltyBumpChance": 0.1,
     "Ammo":    { "InStockChance": 0.30, "Min": 10, "Max": 90 },

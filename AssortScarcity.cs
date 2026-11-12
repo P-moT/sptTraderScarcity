@@ -30,12 +30,30 @@ public static class AssortScarcity
     private static readonly MongoId ModClass = "5448fe124bdc2da5018b4567";
     private static readonly MongoId MoneyClass = "543be5dd4bdc2deb348b4569";
 
-    // Every trader in the base game. Anything else in the traders table was added by a mod.
-    private static readonly HashSet<MongoId> VanillaTraders =
-    [
-        TraderID.PRAPOR, TraderID.THERAPIST, TraderID.FENCE, TraderID.SKIER, TraderID.PEACEKEEPER, TraderID.MECHANIC,
-        TraderID.RAGMAN, TraderID.JAEGER, TraderID.LIGHTHOUSEKEEPER, TraderID.REF,
-    ];
+    // Base game traders the Traders setting covers, by name. Any trader not here (apart from Lightkeeper and Ref) was added by a mod.
+    private static readonly Dictionary<MongoId, string> TraderNames = new()
+    {
+        [TraderID.PRAPOR] = "Prapor", [TraderID.THERAPIST] = "Therapist", [TraderID.SKIER] = "Skier", [TraderID.PEACEKEEPER] = "Peacekeeper",
+        [TraderID.MECHANIC] = "Mechanic", [TraderID.RAGMAN] = "Ragman", [TraderID.JAEGER] = "Jaeger", [TraderID.FENCE] = "Fence",
+    };
+
+    // ExcludedItems as a set, rebuilt whenever the settings are swapped
+    private static ScarcityConfig? _excludedFor;
+    private static HashSet<string> _excluded = [];
+
+    private static bool IsExcluded(MongoId template)
+    {
+        ScarcityConfig config = Config;
+        if (!ReferenceEquals(config, _excludedFor))
+        {
+            _excluded = new HashSet<string>(config.ExcludedItems, StringComparer.OrdinalIgnoreCase);
+            _excludedFor = config;
+        }
+        return _excluded.Count > 0 && _excluded.Contains(template.ToString());
+    }
+
+    private static bool IsTraderEnabled(MongoId trader) =>
+        TraderNames.TryGetValue(trader, out string? name) ? Config.IsTraderEnabled(name) : Config.IncludeModdedTraders;
 
     // Re-roll stock for every root offer of a trader. Lightkeeper and Ref are left alone, and so are modded traders unless IncludeModdedTraders is on.
     // Fence is skipped here because his real stock is generated separately - see ApplyFence.
@@ -45,8 +63,10 @@ public static class AssortScarcity
         {
             return;
         }
-        if (!Config.IncludeModdedTraders && !VanillaTraders.Contains(trader.Base.Id))
+        if (!Config.EnableScarcity || !IsTraderEnabled(trader.Base.Id))
         {
+            // Turned off from the SIC page - ResetExpiredTrader already gave back full stock, but not the loyalty levels
+            RestoreLoyaltyLevels(trader);
             return;
         }
         var loyaltyLevels = trader.Assort.LoyalLevelItems;
@@ -119,12 +139,26 @@ public static class AssortScarcity
         }
     }
 
+    // Undo any loyalty boon still in place from the last roll
+    private static void RestoreLoyaltyLevels(Trader trader)
+    {
+        var loyaltyLevels = trader.Assort.LoyalLevelItems;
+        if (loyaltyLevels is null || !OriginalLoyaltyLevels.TryGetValue(trader.Base.Id, out var originalLevels))
+        {
+            return;
+        }
+        foreach (var level in originalLevels)
+        {
+            loyaltyLevels[level.Key] = level.Value;
+        }
+    }
+
     // Roll stock for Fence's generated assort (FenceService's cache - his entry in the traders table is only the pool it draws from).
     // Fence refreshes part of his stock every few minutes, so each offer is rolled once when it first appears rather than on every refresh.
     // No loyalty boon - Fence's levels come from scav karma, not normal trader loyalty.
     public static void ApplyFence(TraderAssort? mainAssort, TraderAssort? discountAssort, Dictionary<MongoId, TemplateItem> templates, ISptLogger<TraderScarcityLoader>? logger = null)
     {
-        if (!Config.IncludeFence)
+        if (!Config.EnableScarcity || !Config.IsTraderEnabled("Fence"))
         {
             return;
         }
@@ -155,10 +189,10 @@ public static class AssortScarcity
     // Offer ids already rolled, across Fence's main and discount assorts
     private static readonly HashSet<MongoId> RolledFenceOffers = new();
 
-    // Roll whether an offer is in stock and how many. Returns false for offers that are left alone (currency exchange).
+    // Roll whether an offer is in stock and how many. Returns false for offers that are left alone (currency exchange, ExcludedItems).
     private static bool RollStock(Item offer, Dictionary<MongoId, TemplateItem> templates)
     {
-        StockRule? rule = GetRule(offer.Template, templates);
+        StockRule? rule = IsExcluded(offer.Template) ? null : GetRule(offer.Template, templates);
         if (rule is null)
         {
             return false;

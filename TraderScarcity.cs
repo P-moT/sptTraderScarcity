@@ -24,7 +24,7 @@ public record ModMetadata : IModMetadata, IModBlazorMetadata
     public string Name { get; init; } = "TraderScarcity";
     public string Author { get; init; } = "P_moT";
     public List<string>? Contributors { get; init; }
-    public SemanticVersioning.Version Version { get; init; } = new("0.3.2");
+    public SemanticVersioning.Version Version { get; init; } = new("0.3.3");
     public SemanticVersioning.Range SptVersion { get; init; } = new("4.1.6");
 
 
@@ -65,7 +65,7 @@ public class TraderScarcityLoader(
             AssortScarcity.Apply(trader, templateTable.Items, logger, itemHelper);
         }
 
-        // Enabled even with IncludeFence off, so it can be turned on from the SIC page without a restart - ApplyFence does nothing while it's off
+        // Enabled even with Fence turned off, so it can be turned on from the SIC page without a restart - ApplyFence does nothing while it's off
         FencePatches.Logger = logger;
         FencePatches.TemplateTable = templateTable;
 
@@ -141,7 +141,7 @@ public class ResetExpiredTraderPatch : AbstractPatch
 }
 
 // Fence's stock lives in FenceService's cache, built by GenerateFenceAssorts and topped up by PerformPartialRefresh.
-// Both patches are always enabled, and do nothing while IncludeFence is off.
+// Both patches are always enabled, and do nothing while Fence is turned off in Traders.
 internal static class FencePatches
 {
     internal static ISptLogger<TraderScarcityLoader> Logger = null!;

@@ -17,7 +17,7 @@ public enum PickerLayout
 // Client half of multi-option crafting.
 // The server expands each multi-option recipe into sibling recipes (one per input x output). This plugin folds the
 // siblings back into one card and adds input/output pickers to it. Pure UI - every craft is a real server recipe.
-[BepInPlugin("com.pmot.traderscarcity.client", "TraderScarcity Crafting", "0.3.2")]
+[BepInPlugin("com.pmot.traderscarcity.client", "TraderScarcity Crafting", "0.3.3")]
 [BepInDependency("com.SPT.core", "4.1.0")]
 [BepInDependency("com.deadlauncher.usablecrafting", BepInDependency.DependencyFlags.SoftDependency)]
 public class Plugin : BaseUnityPlugin

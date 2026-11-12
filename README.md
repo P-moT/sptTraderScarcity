@@ -16,15 +16,17 @@ Directly inspired by the trader behavior of the original [Realism Mod](https://s
 
 ## Config
 
-Every setting can be changed in the SPT web interface (SIC) on the **Trader Scarcity** page. Saved changes are written to `config.json` and apply from each trader's next restock, without a restart - except `EnableRecipes`, which needs a server restart.
+Every setting can be changed in the SPT web interface (SIC) on the **Trader Scarcity** page. Saved changes are written to `config.json` and apply from each trader's next restock, without a restart - except `EnableRecipes`, which needs a server restart. Each side of the page has a master switch beside its title (trader scarcity and crafting recipes); these save as soon as they are flipped.
 
 Settings live in `config.json` in the mod folder. If you edit the file by hand instead, restart the server afterwards.
 
 | Setting | Default | Description |
 | --- | --- | --- |
+| `EnableScarcity` | `true` | Master switch for trader stock rolls. Off, traders go back to full stock at their next restock. |
 | `LogRolls` | `false` | Log every stock roll to the server console. |
 | `IncludeModdedTraders` | `true` | Whether traders added by other mods are affected. |
-| `IncludeFence` | `false` | Whether Fence is affected. |
+| `Traders` | all `true` except `Fence` | Which base game traders are affected: Prapor, Therapist, Skier, Peacekeeper, Mechanic, Ragman, Jaeger and Fence. Lightkeeper and Ref never are. |
+| `ExcludedItems` | `[]` | Item ids that are never made scarce at any trader. On the SIC page, items are added by searching their English name. |
 | `EnableRecipes` | `true` | Add the multi-option crafting recipes from `recipes.jsonc`. |
 | `LoyaltyBumpChance` | `0.1` | Chance (0 to 1) for an in-stock LL2+ item to be sold one loyalty level lower until the next restock. e.g. if 20 LL2 items roll in stock, about 2 become available at LL1. |
 | `Ammo` | `0.30`, `10`–`90` | Loose rounds. |
