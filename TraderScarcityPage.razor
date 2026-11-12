@@ -75,15 +75,30 @@
             <MudText Typo="Typo.h6">Traders</MudText>
             <MudSwitch T="bool" Value="_config.IncludeModdedTraders" ValueChanged="v => Set(() => _config.IncludeModdedTraders = v)" Color="Color.Primary"
                        Label="Include modded traders" />
-            <MudText Typo="Typo.caption">Also roll stock for traders added by other mods. Off, a modded trader goes back to full stock at its next restock.</MudText>
+            <MudText Typo="Typo.caption">Also roll stock for traders added by other mods, each of which can be turned off below. Off, every modded trader goes back to full stock at its next restock.</MudText>
             <div class="scarcity-panels">
                 <div class="scarcity-panel">
                     <MudText Typo="Typo.subtitle2">Base game traders</MudText>
-                    <MudText Typo="Typo.caption">Unticked traders keep their normal stock. <br />Lightkeeper and Ref are never affected.</MudText>
+                    <MudText Typo="Typo.caption">Unticked traders keep their normal stock.</MudText>
                     @foreach (string trader in ScarcityConfig.TraderNames)
                     {
                         <MudCheckBox T="bool" Value="_config.IsTraderEnabled(trader)" ValueChanged="v => Set(() => _config.Traders[trader] = v)" Color="Color.Primary"
                                      Dense="true" Label="@trader" />
+                    }
+
+                    <MudText Typo="Typo.subtitle2" Class="mt-3">Modded traders</MudText>
+                    @if (ScarcityConfig.InstalledModdedTraders.Count == 0)
+                    {
+                        <MudText Typo="Typo.caption">No modded traders are installed.</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption">@(_config.IncludeModdedTraders ? "Found when the server started. A newly installed trader is ticked." : "Include modded traders is off, so none of these are affected.")</MudText>
+                        @foreach (var (id, name) in ScarcityConfig.InstalledModdedTraders)
+                        {
+                            <MudCheckBox T="bool" Value="_config.IsModdedTraderEnabled(id)" ValueChanged="v => Set(() => _config.ModdedTraders[id] = v)" Color="Color.Primary"
+                                         Dense="true" Label="@name" Disabled="@(!_config.IncludeModdedTraders)" />
+                        }
                     }
                 </div>
                 <div class="scarcity-panel-fill">

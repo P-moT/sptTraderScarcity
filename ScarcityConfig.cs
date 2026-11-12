@@ -29,11 +29,20 @@ public class ScarcityConfig
     // Print a summary to the server console on every roll (startup + each restock).
     public bool LogRolls { get; set; } = false;
 
-    // Also roll stock for traders added by other mods. Off = only base game traders are affected.
+    // Also roll stock for traders added by other mods. Off = only base game traders are affected, whatever ModdedTraders says.
     public bool IncludeModdedTraders { get; set; } = true;
 
+    // Traders added by other mods, by trader id. Each installed one is added here (on) the first time the server starts with it.
+    // Entries for traders whose mod was removed are kept, so reinstalling it keeps the choice.
+    public Dictionary<string, bool> ModdedTraders { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public bool IsModdedTraderEnabled(string traderId) => !ModdedTraders.TryGetValue(traderId, out bool on) || on;
+
+    // Modded traders found in the traders table at startup, id -> name. Used for the SIC page and the comments in config.json.
+    public static IReadOnlyList<(string Id, string Name)> InstalledModdedTraders { get; set; } = [];
+
     // Which base game traders are rolled, by name. Fence is off by default - his rotating stock is already random, whatever he has he has.
-    // Lightkeeper and Ref are never rolled. A trader missing from the file gets its default.
+    // Fence and Ref are off by default. Lightkeeper, the BTR and the Storyteller are never rolled. A trader missing from the file gets its default.
     public Dictionary<string, bool> Traders { get; set; } = DefaultTraders();
 
     // Item template ids that are never rolled, at any trader - they keep the trader's normal stock.
@@ -43,9 +52,9 @@ public class ScarcityConfig
     public bool? IncludeFence { get; set; }
 
     // The base game traders this mod can roll, in the order they're shown and written
-    public static readonly string[] TraderNames = ["Prapor", "Therapist", "Skier", "Peacekeeper", "Mechanic", "Ragman", "Jaeger", "Fence"];
+    public static readonly string[] TraderNames = ["Prapor", "Therapist", "Skier", "Peacekeeper", "Mechanic", "Ragman", "Jaeger", "Fence", "Ref"];
 
-    public static bool DefaultFor(string trader) => trader != "Fence";
+    public static bool DefaultFor(string trader) => trader is not ("Fence" or "Ref");
 
     private static Dictionary<string, bool> DefaultTraders() =>
         TraderNames.ToDictionary(name => name, DefaultFor, StringComparer.OrdinalIgnoreCase);
@@ -113,6 +122,7 @@ public class ScarcityConfig
         var copy = (ScarcityConfig)MemberwiseClone();
         copy.Traders = new Dictionary<string, bool>(Traders, StringComparer.OrdinalIgnoreCase);
         copy.ExcludedItems = [.. ExcludedItems];
+        copy.ModdedTraders = new Dictionary<string, bool>(ModdedTraders, StringComparer.OrdinalIgnoreCase);
         copy.Ammo = Ammo.Clone();
         copy.AmmoBox = AmmoBox.Clone();
         copy.Gear = Gear.Clone();
@@ -156,6 +166,7 @@ public class ScarcityConfig
             $"    \"LogRolls\": {B(LogRolls)},",
             $"    \"IncludeModdedTraders\": {B(IncludeModdedTraders)},",
             $"    \"Traders\": {{ {string.Join(", ", TraderNames.Select(name => $"\"{name}\": {B(IsTraderEnabled(name))}"))} }},",
+            ModdedTradersJson(),
             ExcludedJson(nameOf),
             $"    \"EnableRecipes\": {B(EnableRecipes)},",
             $"    \"LoyaltyBumpChance\": {D(LoyaltyBumpChance)},",
@@ -164,6 +175,42 @@ public class ScarcityConfig
             $"    {R(nameof(Gear), Gear)},",
             $"    {R(nameof(Other), Other)}",
             "}") + "\n";
+    }
+
+    private string ModdedTradersJson()
+    {
+        if (ModdedTraders.Count == 0)
+        {
+            return "    \"ModdedTraders\": {},";
+        }
+        var names = InstalledModdedTraders.ToDictionary(trader => trader.Id, trader => trader.Name, StringComparer.OrdinalIgnoreCase);
+        var entries = ModdedTraders.ToList();
+        var lines = new List<string> { "    \"ModdedTraders\": {" };
+        for (int i = 0; i < entries.Count; i++)
+        {
+            var (id, on) = entries[i];
+            string entry = $"        \"{id}\": {(on ? "true" : "false")}{(i < entries.Count - 1 ? "," : "")}";
+            string name = names.TryGetValue(id, out string? installed) ? installed : "not installed";
+            lines.Add($"{entry.PadRight(44)} // {name}");
+        }
+        lines.Add("    },");
+        return string.Join("\n", lines);
+    }
+
+    // Adds installed modded traders that aren't in ModdedTraders yet, on, and drops entries for base game traders
+    // (0.3.3 test builds listed the BTR and the Storyteller as modded). Returns whether anything changed.
+    public bool AddNewModdedTraders(Func<string, bool> isModded)
+    {
+        bool added = false;
+        foreach (string id in ModdedTraders.Keys.Where(id => !isModded(id)).ToList())
+        {
+            added |= ModdedTraders.Remove(id);
+        }
+        foreach (var (id, _) in InstalledModdedTraders)
+        {
+            added |= ModdedTraders.TryAdd(id, true);
+        }
+        return added;
     }
 
     private string ExcludedJson(Func<string, string>? nameOf)
@@ -205,6 +252,7 @@ public class ScarcityConfig
         }
         Traders = traders;
         IncludeFence = null;
+        ModdedTraders = new Dictionary<string, bool>(ModdedTraders ?? [], StringComparer.OrdinalIgnoreCase);
         ExcludedItems = (ExcludedItems ?? []).Where(id => !string.IsNullOrWhiteSpace(id)).Select(id => id.Trim()).Distinct().ToList();
 
         LoyaltyBumpChance = ClampChance(LoyaltyBumpChance, nameof(LoyaltyBumpChance), logger);

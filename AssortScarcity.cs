@@ -30,12 +30,20 @@ public static class AssortScarcity
     private static readonly MongoId ModClass = "5448fe124bdc2da5018b4567";
     private static readonly MongoId MoneyClass = "543be5dd4bdc2deb348b4569";
 
-    // Base game traders the Traders setting covers, by name. Any trader not here (apart from Lightkeeper and Ref) was added by a mod.
+    // Base game traders the Traders setting covers, by name. Any trader not here (apart from those in NeverRolled) was added by a mod.
     private static readonly Dictionary<MongoId, string> TraderNames = new()
     {
         [TraderID.PRAPOR] = "Prapor", [TraderID.THERAPIST] = "Therapist", [TraderID.SKIER] = "Skier", [TraderID.PEACEKEEPER] = "Peacekeeper",
-        [TraderID.MECHANIC] = "Mechanic", [TraderID.RAGMAN] = "Ragman", [TraderID.JAEGER] = "Jaeger", [TraderID.FENCE] = "Fence",
+        [TraderID.MECHANIC] = "Mechanic", [TraderID.RAGMAN] = "Ragman", [TraderID.JAEGER] = "Jaeger", [TraderID.FENCE] = "Fence", [TraderID.REF] = "Ref",
     };
+
+    // Base game traders that are never rolled: Lightkeeper, the BTR driver and the Storyteller
+    private static readonly HashSet<MongoId> NeverRolled =
+    [
+        TraderID.LIGHTHOUSEKEEPER,
+        "656f0f98d80a697f855d34b1", // BTR
+        "6864e812f9fe664cb8b8e152", // Storyteller
+    ];
 
     // ExcludedItems as a set, rebuilt whenever the settings are swapped
     private static ScarcityConfig? _excludedFor;
@@ -53,13 +61,19 @@ public static class AssortScarcity
     }
 
     private static bool IsTraderEnabled(MongoId trader) =>
-        TraderNames.TryGetValue(trader, out string? name) ? Config.IsTraderEnabled(name) : Config.IncludeModdedTraders;
+        TraderNames.TryGetValue(trader, out string? name)
+            ? Config.IsTraderEnabled(name)
+            : Config.IncludeModdedTraders && Config.IsModdedTraderEnabled(trader.ToString());
 
-    // Re-roll stock for every root offer of a trader. Lightkeeper and Ref are left alone, and so are modded traders unless IncludeModdedTraders is on.
+    // True for traders added by other mods - anything that isn't a base game trader
+    public static bool IsModded(MongoId trader) =>
+        !TraderNames.ContainsKey(trader) && !NeverRolled.Contains(trader);
+
+    // Re-roll stock for every root offer of a trader. Lightkeeper, the BTR and the Storyteller are left alone, and so are modded traders unless IncludeModdedTraders is on.
     // Fence is skipped here because his real stock is generated separately - see ApplyFence.
     public static void Apply(Trader trader, Dictionary<MongoId, TemplateItem> templates, ISptLogger<TraderScarcityLoader>? logger = null, ItemHelper? itemHelper = null)
     {
-        if (trader?.Assort?.Items is null || trader.Base.Id == TraderID.LIGHTHOUSEKEEPER || trader.Base.Id == TraderID.FENCE || trader.Base.Id == TraderID.REF)
+        if (trader?.Assort?.Items is null || trader.Base.Id == TraderID.FENCE || NeverRolled.Contains(trader.Base.Id))
         {
             return;
         }

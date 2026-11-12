@@ -25,7 +25,8 @@ Settings live in `config.json` in the mod folder. If you edit the file by hand i
 | `EnableScarcity` | `true` | Master switch for trader stock rolls. Off, traders go back to full stock at their next restock. |
 | `LogRolls` | `false` | Log every stock roll to the server console. |
 | `IncludeModdedTraders` | `true` | Whether traders added by other mods are affected. |
-| `Traders` | all `true` except `Fence` | Which base game traders are affected: Prapor, Therapist, Skier, Peacekeeper, Mechanic, Ragman, Jaeger and Fence. Lightkeeper and Ref never are. |
+| `Traders` | all `true` except `Fence` and `Ref` | Which base game traders are affected: Prapor, Therapist, Skier, Peacekeeper, Mechanic, Ragman, Jaeger, Fence and Ref. Lightkeeper, the BTR and the Storyteller never are. |
+| `ModdedTraders` | `{}` | Traders added by other mods, by trader id, each `true` or `false`. Any installed modded trader that isn't listed is added (as `true`) when the server starts. Only used while `IncludeModdedTraders` is on. |
 | `ExcludedItems` | `[]` | Item ids that are never made scarce at any trader. On the SIC page, items are added by searching their English name. |
 | `EnableRecipes` | `true` | Add the multi-option crafting recipes from `recipes.jsonc`. |
 | `LoyaltyBumpChance` | `0.1` | Chance (0 to 1) for an in-stock LL2+ item to be sold one loyalty level lower until the next restock. e.g. if 20 LL2 items roll in stock, about 2 become available at LL1. |

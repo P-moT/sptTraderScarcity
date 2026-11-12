@@ -34,6 +34,15 @@ public class ItemCatalog(TemplateTable templateTable, LocaleService localeServic
         return Items.TryGetValue(id.Trim(), out CatalogItem? item) ? item : null;
     }
 
+    // Forget the index - the next lookup rebuilds it from the database as it is then
+    public void Reset()
+    {
+        lock (_lock)
+        {
+            _items = null;
+        }
+    }
+
     // Name for recipes.jsonc comments and the page - the id itself when the item isn't in the database
     public string NameOf(string? id)
     {
@@ -103,7 +112,12 @@ public class ItemCatalog(TemplateTable templateTable, LocaleService localeServic
                 continue;
             }
             string id = template.Id.ToString();
+            // Items added by mods sometimes have no English name - fall back to the template's own name so they can still be found
             if (!locale.TryGetValue($"{id} Name", out string? name) || string.IsNullOrWhiteSpace(name))
+            {
+                name = template.Name;
+            }
+            if (string.IsNullOrWhiteSpace(name))
             {
                 continue;
             }

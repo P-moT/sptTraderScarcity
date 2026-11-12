@@ -38,19 +38,23 @@ public record ModMetadata : IModMetadata, IModBlazorMetadata
     public string? HomePageDescription { get; init; } = "Tune trader stock scarcity and edit the multi-option crafting recipes.";
 }
 
-// Runs after trader registration so traders added by other mods are rolled too
-[Injectable(TypePriority = OnLoadOrder.TraderRegistration + 1)]
+// Runs at the end of trader registration so traders added by other mods are found and rolled too. Mods register theirs at
+// TraderRegistration + a small offset (Painter uses + 2), so this waits until just before the next stage.
+[Injectable(TypePriority = OnLoadOrder.Routers - 1)]
 public class TraderScarcityLoader(
     ISptLogger<TraderScarcityLoader> logger,
     TradersTable tradersTable,
     TemplateTable templateTable,
     ItemHelper itemHelper,
     ModHelper modHelper,
-    FenceService fenceService) : IOnLoad
+    FenceService fenceService,
+    ItemCatalog itemCatalog) : IOnLoad
 {
     public Task OnLoadAsync(CancellationToken cancellationToken)
     {
-        AssortScarcity.Config = ScarcityConfig.Load(modHelper.GetAbsolutePathToModFolder(Assembly.GetExecutingAssembly()), logger);
+        string modFolder = modHelper.GetAbsolutePathToModFolder(Assembly.GetExecutingAssembly());
+        AssortScarcity.Config = ScarcityConfig.Load(modFolder, logger);
+        AddModdedTraders(modFolder);
 
         ResetExpiredTraderPatch.Logger = logger;
         ResetExpiredTraderPatch.TemplateTable = templateTable;
@@ -78,6 +82,42 @@ public class TraderScarcityLoader(
         logger.Success("[TraderScarcity] Loaded");
 
         return Task.CompletedTask;
+    }
+
+    // Lists the traders other mods have added, and writes any new ones into config.json (on), so each can be turned off on its own
+    private void AddModdedTraders(string modFolder)
+    {
+        Dictionary<MongoId, Trader> traders = tradersTable;
+        ScarcityConfig.InstalledModdedTraders = traders.Values
+            .Where(trader => trader?.Base is not null && AssortScarcity.IsModded(trader.Base.Id))
+            .Select(trader => (Id: trader.Base.Id.ToString(), Name: string.IsNullOrWhiteSpace(trader.Base.Nickname) ? trader.Base.Id.ToString() : trader.Base.Nickname.Trim()))
+            .OrderBy(trader => trader.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        // Not written while config.json couldn't be read - that would replace the user's file with defaults
+        if (ScarcityConfig.LoadError != null)
+        {
+            return;
+        }
+        ScarcityConfig config = AssortScarcity.Config.Clone();
+        if (!config.AddNewModdedTraders(id => !MongoId.IsValidMongoId(id) || AssortScarcity.IsModded(id)))
+        {
+            return;
+        }
+        try
+        {
+            ScarcityConfig.Save(modFolder, config, itemCatalog.NameOf);
+            logger.Info($"[TraderScarcity] Updated the modded traders in config.json: {string.Join(", ", ScarcityConfig.InstalledModdedTraders.Select(trader => trader.Name))}");
+        }
+        catch (Exception ex)
+        {
+            logger.Warning($"[TraderScarcity] Could not add modded traders to config.json: {ex.Message}");
+        }
+        finally
+        {
+            // Item names were looked up for the comments - forget them, so items added by mods that load later still show up on the SIC page
+            itemCatalog.Reset();
+        }
     }
 }
 
